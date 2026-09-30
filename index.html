@@ -40,6 +40,19 @@
     .click-hint { margin:0; color:var(--muted); font-size:13px; } .click-hint strong { color:var(--gold); font-weight:600; }
     .stats { display:flex; justify-content:center; gap:32px; margin:30px 0 0; }
     .stat { min-width:90px; } .stat-value { margin:0; font:15px var(--mono); font-variant-numeric:tabular-nums; } .stat-label { margin:5px 0 0; color:var(--muted); font-size:11px; }
+    .asteroid-event { width:min(100%,440px); margin:30px auto 0; text-align:left; }
+    .asteroid-event h2 { margin:0 0 16px; font-size:16px; }
+    .bossbar-row { margin-top:14px; }
+    .bossbar-heading { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:7px; color:var(--muted); font-size:12px; }
+    .bossbar-time { color:var(--paper); font:13px var(--mono); font-variant-numeric:tabular-nums; }
+    .bossbar-track { height:12px; overflow:hidden; border:1px solid #ffffff24; border-radius:999px; background:#101319; }
+    .bossbar-fill { display:block; width:100%; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--mint),var(--gold)); transition:width 350ms linear; }
+    #asteroid-drop-row .bossbar-fill { background:linear-gradient(90deg,var(--coral),var(--gold)); }
+    .asteroid-count { margin:10px 0 0; color:var(--muted); font:11px var(--mono); text-align:right; }
+    .asteroid-button { width:100%; min-height:48px; margin-top:14px; padding:10px 14px; border:1px solid #ffd05a88; border-radius:7px; color:var(--gold); background:#ffd05a12; cursor:pointer; font-size:14px; font-weight:700; }
+    .asteroid-button:hover { color:var(--ink); background:var(--gold); }
+    .asteroid-button:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
+    .asteroid-button[hidden] { display:none; }
     .shop {
       align-self:flex-start;
       width:min(100%, 420px);
@@ -143,6 +156,19 @@
       </button>
       <p class="click-hint">Tippe den Stern <strong>+<span id="per-click">1</span></strong></p>
       <div class="stats" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label">Klicks</p></div></div>
+      <section class="asteroid-event" aria-labelledby="asteroid-event-title">
+        <h2 id="asteroid-event-title">Asteroiden-Event</h2>
+        <div class="bossbar-row">
+          <div class="bossbar-heading"><span id="event-phase-label">Runde endet in</span><time class="bossbar-time" id="event-phase-time">30:00</time></div>
+          <div class="bossbar-track" id="event-phase-track" role="progressbar" aria-label="Zeit der Asteroidenrunde" aria-valuemin="0" aria-valuemax="1800" aria-valuenow="1800"><span class="bossbar-fill" id="event-phase-fill"></span></div>
+        </div>
+        <div class="bossbar-row" id="asteroid-drop-row">
+          <div class="bossbar-heading"><span>Nächster Asteroid fällt in</span><time class="bossbar-time" id="asteroid-drop-time">03:00</time></div>
+          <div class="bossbar-track" id="asteroid-drop-track" role="progressbar" aria-label="Zeit bis zum nächsten Asteroiden" aria-valuemin="0" aria-valuemax="180" aria-valuenow="180"><span class="bossbar-fill" id="asteroid-drop-fill"></span></div>
+        </div>
+        <p class="asteroid-count" id="asteroid-count">1 / 10 Asteroiden</p>
+        <button class="asteroid-button" id="asteroid-button" type="button">☄ Asteroid anklicken · +3.000.000 Sterne</button>
+      </section>
     </section>
     <aside class="shop" aria-labelledby="shop-title" id="shop">
       <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="false" aria-controls="upgrade-list-panel">
@@ -198,7 +224,27 @@
       ['3388',{ stars:50000000 }],
       ['FREEUPGRADE',{ upgradeId:'asteroid', level:10 }]
     ]);
-    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[] });
+    const ASTEROID_ROUND_MS=30*60*1000;
+    const ASTEROID_PAUSE_MS=30*60*1000;
+    const ASTEROID_DROP_MS=3*60*1000;
+    const ASTEROID_REWARD=3000000;
+    const MAX_ASTEROIDS_PER_ROUND=10;
+    function createAsteroidEvent(startedAt=Date.now()) {
+      return { phase:'active', phaseEndsAt:startedAt+ASTEROID_ROUND_MS, nextAsteroidAt:startedAt+ASTEROID_DROP_MS, asteroidsSpawned:1, asteroidAvailable:true };
+    }
+    function normalizeAsteroidEvent(event,now=Date.now()) {
+      if (!event || !['active','pause'].includes(event.phase) || !Number.isFinite(event.phaseEndsAt)) return createAsteroidEvent(now);
+      const phase=event.phase;
+      const defaultNext=phase==='active'?event.phaseEndsAt-ASTEROID_ROUND_MS+ASTEROID_DROP_MS:0;
+      return {
+        phase,
+        phaseEndsAt:event.phaseEndsAt,
+        nextAsteroidAt:Number.isFinite(event.nextAsteroidAt)&&event.nextAsteroidAt>0?event.nextAsteroidAt:defaultNext,
+        asteroidsSpawned:phase==='active'?Math.max(0,Math.min(MAX_ASTEROIDS_PER_ROUND,Math.floor(Number(event.asteroidsSpawned)||0))):0,
+        asteroidAvailable:phase==='active'&&event.asteroidAvailable===true
+      };
+    }
+    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent() });
     let state = loadState();
     let toastTimer;
 
@@ -206,7 +252,7 @@
       try {
         const stored = JSON.parse(localStorage.getItem('star-clicker-save'));
         if (!stored || typeof stored.stars !== 'number' || !stored.owned) return defaultState();
-        return { stars:Math.max(0,stored.stars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item => [item.id,Math.max(0,Number(stored.owned[item.id])||0)])), redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[] };
+        return { stars:Math.max(0,stored.stars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item => [item.id,Math.max(0,Number(stored.owned[item.id])||0)])), redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[], asteroidEvent:normalizeAsteroidEvent(stored.asteroidEvent) };
       } catch { return defaultState(); }
     }
     function saveState() {
@@ -225,6 +271,65 @@
         const cost=costFor(item),count=state.owned[item.id];
         return `<article class="upgrade"><div class="upgrade-icon" aria-hidden="true">${item.icon}</div><div class="upgrade-copy"><h3>${item.name} <span style="color:var(--muted);font:10px var(--mono)">×${count}</span></h3><p>${item.description}</p></div><button class="buy-button" type="button" data-upgrade="${item.id}" ${state.stars<cost?'disabled':''}>${format(cost)} ✦</button></article>`;
       }).join('');
+      renderAsteroidEvent();
+    }
+    function formatDuration(milliseconds) {
+      const totalSeconds=Math.ceil(Math.max(0,milliseconds)/1000);
+      return `${String(Math.floor(totalSeconds/60)).padStart(2,'0')}:${String(totalSeconds%60).padStart(2,'0')}`;
+    }
+    function updateBossbar(trackId,fillId,timeId,remaining,duration) {
+      const seconds=Math.ceil(Math.max(0,remaining)/1000);
+      const track=document.getElementById(trackId);
+      track.setAttribute('aria-valuemax',String(duration/1000));
+      track.setAttribute('aria-valuenow',String(seconds));
+      document.getElementById(fillId).style.width=`${Math.max(0,Math.min(100,remaining/duration*100))}%`;
+      document.getElementById(timeId).textContent=formatDuration(remaining);
+    }
+    function renderAsteroidEvent(now=Date.now()) {
+      const event=state.asteroidEvent;
+      const active=event.phase==='active';
+      const phaseDuration=active?ASTEROID_ROUND_MS:ASTEROID_PAUSE_MS;
+      const phaseRemaining=Math.max(0,event.phaseEndsAt-now);
+      document.getElementById('event-phase-label').textContent=active?'Runde endet in':'Nächste Runde in';
+      document.getElementById('event-phase-track').setAttribute('aria-label',active?'Zeit der Asteroidenrunde':'Zeit bis zur nächsten Asteroidenrunde');
+      updateBossbar('event-phase-track','event-phase-fill','event-phase-time',phaseRemaining,phaseDuration);
+      const dropRow=document.getElementById('asteroid-drop-row');
+      const hasFutureDrop=active&&event.asteroidsSpawned<MAX_ASTEROIDS_PER_ROUND;
+      dropRow.hidden=!hasFutureDrop;
+      if (hasFutureDrop) updateBossbar('asteroid-drop-track','asteroid-drop-fill','asteroid-drop-time',Math.max(0,event.nextAsteroidAt-now),ASTEROID_DROP_MS);
+      const count=document.getElementById('asteroid-count');
+      count.hidden=!active;
+      count.textContent=`${format(event.asteroidsSpawned)} / ${format(MAX_ASTEROIDS_PER_ROUND)} Asteroiden`;
+      document.getElementById('asteroid-button').hidden=!active||!event.asteroidAvailable;
+    }
+    function updateAsteroidEvent(now=Date.now()) {
+      const event=state.asteroidEvent;
+      let changed=false;
+      while (now>=event.phaseEndsAt) {
+        const nextPhaseStart=event.phaseEndsAt;
+        if (event.phase==='active') {
+          event.phase='pause';
+          event.phaseEndsAt=nextPhaseStart+ASTEROID_PAUSE_MS;
+          event.nextAsteroidAt=0;
+          event.asteroidsSpawned=0;
+          event.asteroidAvailable=false;
+        } else {
+          event.phase='active';
+          event.phaseEndsAt=nextPhaseStart+ASTEROID_ROUND_MS;
+          event.nextAsteroidAt=nextPhaseStart+ASTEROID_DROP_MS;
+          event.asteroidsSpawned=1;
+          event.asteroidAvailable=true;
+        }
+        changed=true;
+      }
+      if (event.phase==='active'&&event.asteroidsSpawned<MAX_ASTEROIDS_PER_ROUND&&now>=event.nextAsteroidAt) {
+        const due=Math.min(MAX_ASTEROIDS_PER_ROUND-event.asteroidsSpawned,Math.floor((now-event.nextAsteroidAt)/ASTEROID_DROP_MS)+1);
+        event.asteroidsSpawned+=due;
+        event.asteroidAvailable=true;
+        event.nextAsteroidAt+=due*ASTEROID_DROP_MS;
+        changed=true;
+      }
+      return changed;
     }
     function showToast(message) {
       const toast=document.getElementById('toast'); toast.textContent=message; toast.classList.add('show');
@@ -265,6 +370,14 @@
     syncShopState();
 
     document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
+    document.getElementById('asteroid-button').addEventListener('click',()=>{
+      if (updateAsteroidEvent()) { render(); saveState(); return; }
+      const event=state.asteroidEvent;
+      if (event.phase!=='active'||!event.asteroidAvailable) { renderAsteroidEvent(); saveState(); return; }
+      event.asteroidAvailable=false;
+      state.stars+=ASTEROID_REWARD;
+      render(); saveState(); showToast(`Asteroid eingesammelt: +${format(ASTEROID_REWARD)} Sterne`);
+    });
     document.getElementById('upgrade-list').addEventListener('click',event=>{
       const button=event.target.closest('[data-upgrade]'); if (!button) return;
       const item=upgrades.find(upgrade=>upgrade.id===button.dataset.upgrade),cost=costFor(item);
@@ -293,10 +406,21 @@
     document.getElementById('reset-button').addEventListener('click',()=>{
       if (!window.confirm('Wirklich von vorne anfangen? Dein Spielstand wird gelöscht.')) return;
       const redeemedCodes=state.redeemedCodes;
-      state=defaultState(); state.redeemedCodes=redeemedCodes; render(); saveState(); showToast('Neues Sternen-Abenteuer gestartet');
+      updateAsteroidEvent();
+      const asteroidEvent=state.asteroidEvent;
+      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; render(); saveState(); showToast('Neues Sternen-Abenteuer gestartet');
     });
-    window.setInterval(()=>{ const income=starsPerSecond(); if (income<=0) return; state.stars+=income; render(); saveState(); },1000);
+    document.getElementById('asteroid-button').textContent=`☄ Asteroid anklicken · +${format(ASTEROID_REWARD)} Sterne`;
+    updateAsteroidEvent();
     render();
+    saveState();
+    window.setInterval(()=>{
+      const eventChanged=updateAsteroidEvent();
+      const income=starsPerSecond();
+      if (income>0) state.stars+=income;
+      if (income>0) render(); else renderAsteroidEvent();
+      if (income>0||eventChanged) saveState();
+    },1000);
     if ('serviceWorker' in navigator && location.protocol!=='file:') window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
   </script>
 </body>
