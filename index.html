@@ -46,7 +46,7 @@
       align-items:center;
       justify-content:space-between;
       width:100%;
-      padding:14px 16px;
+      padding:12px 14px;
       border:0;
       background:rgba(255,255,255,.02);
       color:var(--paper);
@@ -59,9 +59,18 @@
       font-size:18px;
       font-weight:700;
     }
-    .shop-toggle span:last-child {
+    .shop-toggle .toggle-indicator {
+      display:grid;
+      place-items:center;
+      width:26px;
+      height:26px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:50%;
       color:var(--gold);
+      background:rgba(255,255,255,.03);
       font-size:18px;
+      line-height:1;
+      transition:transform 180ms ease;
     }
     .shop-panel { display:block; padding:0 12px 12px; }
     .shop-heading { display:none; }
@@ -100,7 +109,6 @@
       }
       .shop.collapsed .shop-panel { display:none; }
       .shop:not(.collapsed) .shop-panel { display:block; }
-      .toggle-indicator { transition:transform 180ms ease; }
       .shop.collapsed .toggle-indicator { transform:rotate(-90deg); }
       .shop:not(.collapsed) .toggle-indicator { transform:rotate(0deg); }
       .upgrade { grid-template-columns:40px minmax(0,1fr) auto; gap:10px; }
@@ -135,7 +143,7 @@
       <aside class="shop" aria-labelledby="shop-title" id="shop">
         <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="true" aria-controls="upgrade-list-panel">
           <strong>Upgrades</strong>
-          <span aria-hidden="true" class="toggle-indicator">▾</span>
+          <span aria-hidden="true" class="toggle-indicator">›</span>
         </button>
         <div class="shop-panel" id="upgrade-list-panel">
           <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
@@ -247,7 +255,9 @@
     });
     window.addEventListener('resize', syncShopState);
 
-    if (window.innerWidth <= 720) shop.classList.add('collapsed');
+    if (window.innerWidth <= 720) {
+      shop.classList.add('collapsed');
+    }
     syncShopState();
 
     document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
