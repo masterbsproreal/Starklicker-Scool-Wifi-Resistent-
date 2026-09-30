@@ -166,7 +166,7 @@
           <div class="bossbar-heading"><span>Nächster Asteroid fällt in</span><time class="bossbar-time" id="asteroid-drop-time">03:00</time></div>
           <div class="bossbar-track" id="asteroid-drop-track" role="progressbar" aria-label="Zeit bis zum nächsten Asteroiden" aria-valuemin="0" aria-valuemax="180" aria-valuenow="180"><span class="bossbar-fill" id="asteroid-drop-fill"></span></div>
         </div>
-        <p class="asteroid-count" id="asteroid-count">1 / 10 Asteroiden</p>
+        <p class="asteroid-count" id="asteroid-count">Eingesammelt: 0 / 10</p>
         <button class="asteroid-button" id="asteroid-button" type="button">☄ Asteroid anklicken · +3.000.000 Sterne</button>
       </section>
     </section>
@@ -230,7 +230,7 @@
     const ASTEROID_REWARD=3000000;
     const MAX_ASTEROIDS_PER_ROUND=10;
     function createAsteroidEvent(startedAt=Date.now()) {
-      return { phase:'active', phaseEndsAt:startedAt+ASTEROID_ROUND_MS, nextAsteroidAt:startedAt+ASTEROID_DROP_MS, asteroidsSpawned:1, asteroidAvailable:true };
+      return { phase:'active', phaseEndsAt:startedAt+ASTEROID_ROUND_MS, nextAsteroidAt:startedAt+ASTEROID_DROP_MS, asteroidsSpawned:1, asteroidsCollected:0, asteroidAvailable:true };
     }
     function normalizeAsteroidEvent(event,now=Date.now()) {
       if (!event || !['active','pause'].includes(event.phase) || !Number.isFinite(event.phaseEndsAt)) return createAsteroidEvent(now);
@@ -241,6 +241,7 @@
         phaseEndsAt:event.phaseEndsAt,
         nextAsteroidAt:Number.isFinite(event.nextAsteroidAt)&&event.nextAsteroidAt>0?event.nextAsteroidAt:defaultNext,
         asteroidsSpawned:phase==='active'?Math.max(0,Math.min(MAX_ASTEROIDS_PER_ROUND,Math.floor(Number(event.asteroidsSpawned)||0))):0,
+        asteroidsCollected:phase==='active'?Math.max(0,Math.min(MAX_ASTEROIDS_PER_ROUND,Math.floor(Number(event.asteroidsCollected)||0))):0,
         asteroidAvailable:phase==='active'&&event.asteroidAvailable===true
       };
     }
@@ -299,7 +300,7 @@
       if (hasFutureDrop) updateBossbar('asteroid-drop-track','asteroid-drop-fill','asteroid-drop-time',Math.max(0,event.nextAsteroidAt-now),ASTEROID_DROP_MS);
       const count=document.getElementById('asteroid-count');
       count.hidden=!active;
-      count.textContent=`${format(event.asteroidsSpawned)} / ${format(MAX_ASTEROIDS_PER_ROUND)} Asteroiden`;
+      count.textContent=`Eingesammelt: ${format(event.asteroidsCollected)} / ${format(MAX_ASTEROIDS_PER_ROUND)}`;
       document.getElementById('asteroid-button').hidden=!active||!event.asteroidAvailable;
     }
     function updateAsteroidEvent(now=Date.now()) {
@@ -312,12 +313,14 @@
           event.phaseEndsAt=nextPhaseStart+ASTEROID_PAUSE_MS;
           event.nextAsteroidAt=0;
           event.asteroidsSpawned=0;
+          event.asteroidsCollected=0;
           event.asteroidAvailable=false;
         } else {
           event.phase='active';
           event.phaseEndsAt=nextPhaseStart+ASTEROID_ROUND_MS;
           event.nextAsteroidAt=nextPhaseStart+ASTEROID_DROP_MS;
           event.asteroidsSpawned=1;
+          event.asteroidsCollected=0;
           event.asteroidAvailable=true;
         }
         changed=true;
@@ -375,6 +378,7 @@
       const event=state.asteroidEvent;
       if (event.phase!=='active'||!event.asteroidAvailable) { renderAsteroidEvent(); saveState(); return; }
       event.asteroidAvailable=false;
+      event.asteroidsCollected+=1;
       state.stars+=ASTEROID_REWARD;
       render(); saveState(); showToast(`Asteroid eingesammelt: +${format(ASTEROID_REWARD)} Sterne`);
     });
