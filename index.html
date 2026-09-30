@@ -53,6 +53,22 @@
     .bossbar-fill { display:block; width:100%; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--mint),var(--gold)); transition:width 350ms linear; }
     #asteroid-drop-row .bossbar-fill { background:linear-gradient(90deg,var(--coral),var(--gold)); }
     .asteroid-count { margin:10px 0 0; color:var(--muted); font:11px var(--mono); text-align:right; }
+    .achievement-panel { width:min(100%,440px); margin:18px auto 0; text-align:left; }
+    .achievement-panel summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid #ffffff17; cursor:pointer; font-size:14px; font-weight:700; list-style:none; }
+    .achievement-panel summary::-webkit-details-marker { display:none; }
+    .achievement-panel summary::after { display:grid; width:24px; height:24px; place-items:center; border:1px solid #ffffff24; border-radius:50%; color:var(--gold); content:'+'; font:16px var(--mono); }
+    .achievement-panel[open] summary::after { content:'−'; }
+    .achievement-list { display:grid; }
+    .achievement-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; padding:11px 0; border-top:1px solid #ffffff12; }
+    .achievement-copy { min-width:0; }
+    .achievement-copy h3 { margin:0; font-size:13px; }
+    .achievement-copy p { margin:4px 0 8px; color:var(--muted); font-size:11px; line-height:1.35; }
+    .achievement-progress-track { height:6px; overflow:hidden; border-radius:999px; background:#ffffff12; }
+    .achievement-progress-fill { display:block; height:100%; border-radius:inherit; background:var(--mint); }
+    .achievement-progress-label { display:block; margin-top:5px; color:var(--muted); font:10px var(--mono); }
+    .achievement-claim { min-width:92px; max-width:128px; padding:8px 10px; border:1px solid #ffd05a66; border-radius:5px; color:var(--gold); background:#ffd05a0c; cursor:pointer; font-size:11px; font-weight:600; }
+    .achievement-claim:disabled { border-color:#ffffff18; color:#89919b; background:transparent; cursor:default; }
+    .achievement-claim:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
     .asteroid-button { position:fixed; top:var(--fall-start,-96px); left:var(--asteroid-x,50%); z-index:6; display:grid; width:88px; height:88px; place-items:center; padding:4px; border:0; border-radius:50%; background:none; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; animation:asteroid-fall var(--fall-duration,5s) linear forwards; }
     .asteroid-art { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 0 12px #ff806e99); }
     .asteroid-button:hover .asteroid-art { filter:drop-shadow(0 0 20px #ffd05ae0) brightness(1.15); }
@@ -186,6 +202,10 @@
         </div>
         <p class="asteroid-count" id="asteroid-count">Eingesammelt: 0 / 10</p>
       </section>
+      <details class="achievement-panel" id="achievement-panel">
+        <summary id="achievements-title">Erfolge</summary>
+        <div class="achievement-list" id="achievement-list"></div>
+      </details>
     </section>
     <aside class="shop" aria-labelledby="shop-title" id="shop">
       <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="false" aria-controls="upgrade-list-panel">
@@ -256,6 +276,11 @@
     const ASTEROID_FALL_MS=5*1000;
     const ASTEROID_REWARD=3000000;
     const MAX_ASTEROIDS_PER_ROUND=10;
+    const achievements=[
+      { id:'clicks-100', stat:'clicks', target:100, reward:5000, nameKey:'achievementClicksName', descriptionKey:'achievementClicksDesc' },
+      { id:'asteroids-10', stat:'asteroids', target:10, reward:500000, nameKey:'achievementAsteroidsName', descriptionKey:'achievementAsteroidsDesc' },
+      { id:'upgrades-10', stat:'upgradeLevels', target:10, reward:50000, nameKey:'achievementUpgradesName', descriptionKey:'achievementUpgradesDesc' }
+    ];
     function randomAsteroidX() { return Math.round(12+Math.random()*76); }
     function createAsteroidEvent(startedAt=Date.now()) {
       return { phase:'active', phaseEndsAt:startedAt+ASTEROID_ROUND_MS, nextAsteroidAt:startedAt+ASTEROID_DROP_MS, asteroidsSpawned:1, asteroidsCollected:0, asteroidFallEndsAt:startedAt+ASTEROID_FALL_MS, asteroidX:randomAsteroidX(), asteroidAvailable:true };
@@ -275,7 +300,7 @@
         asteroidAvailable:phase==='active'&&event.asteroidAvailable===true&&now<(Number.isFinite(event.asteroidFallEndsAt)?event.asteroidFallEndsAt:now+ASTEROID_FALL_MS)
       };
     }
-    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent() });
+    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent(), achievementStats:{ clicks:0, asteroids:0, upgradeLevels:0, claimed:[] } });
     function parseSavedState(raw) {
       if (!raw) return null;
       try {
@@ -283,7 +308,21 @@
         const savedStars=Number(stored?.stars);
         if (!stored||typeof stored!=='object'||stored.stars===null||!Number.isFinite(savedStars)) return null;
         const savedOwned=stored.owned&&typeof stored.owned==='object'&&!Array.isArray(stored.owned)?stored.owned:{};
-        return { stars:Math.max(0,savedStars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item=>[item.id,Math.max(0,Number(savedOwned[item.id])||0)])), redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[], asteroidEvent:normalizeAsteroidEvent(stored.asteroidEvent) };
+        const savedAchievements=stored.achievementStats&&typeof stored.achievementStats==='object'&&!Array.isArray(stored.achievementStats)?stored.achievementStats:{};
+        const ownedLevelCount=Object.values(savedOwned).reduce((total,count)=>total+Math.max(0,Number(count)||0),0);
+        return {
+          stars:Math.max(0,savedStars),
+          clicks:Math.max(0,Number(stored.clicks)||0),
+          owned:Object.fromEntries(upgrades.map(item=>[item.id,Math.max(0,Number(savedOwned[item.id])||0)])),
+          redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[],
+          asteroidEvent:normalizeAsteroidEvent(stored.asteroidEvent),
+          achievementStats:{
+            clicks:Math.max(0,Number(savedAchievements.clicks??stored.clicks)||0),
+            asteroids:Math.max(0,Number(savedAchievements.asteroids??stored.asteroidEvent?.asteroidsCollected)||0),
+            upgradeLevels:Math.max(0,Number(savedAchievements.upgradeLevels??ownedLevelCount)||0),
+            claimed:Array.isArray(savedAchievements.claimed)?savedAchievements.claimed.filter(id=>typeof id==='string'):[]
+          }
+        };
       } catch { return null; }
     }
     let state = loadState();
@@ -297,7 +336,7 @@
     }
     let currentLanguage=loadLanguage();
     function translate(key,values={}) {
-      const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerLocales.de.ui[key]||key;
+      const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerAchievementLocales[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||StarClickerAchievementLocales.de[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
     }
     function applyTranslations() {
@@ -307,7 +346,7 @@
         'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel',
         'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks',
         'asteroid-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
-        'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel'
+        'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel','achievements-title':'achievementsTitle'
       };
       for (const [id,key] of Object.entries(textById)) document.getElementById(id).textContent=translate(key);
       document.getElementById('secret-code-input').placeholder=translate('codePlaceholder');
@@ -352,6 +391,17 @@
         return `<article class="upgrade"><div class="upgrade-icon" aria-hidden="true">${item.icon}</div><div class="upgrade-copy"><h3>${name} <span style="color:var(--muted);font:10px var(--mono)">×${count}</span></h3><p>${description}</p></div><button class="buy-button" type="button" data-upgrade="${item.id}" ${state.stars<cost?'disabled':''}>${format(cost)} ✦</button></article>`;
       }).join('');
       renderAsteroidEvent();
+      renderAchievements();
+    }
+    function renderAchievements() {
+      document.getElementById('achievement-list').innerHTML=achievements.map(achievement=>{
+        const progress=Math.min(achievement.target,state.achievementStats[achievement.stat]);
+        const claimed=state.achievementStats.claimed.includes(achievement.id);
+        const completed=progress>=achievement.target;
+        const name=translate(achievement.nameKey);
+        const buttonText=claimed?translate('achievementClaimed'):translate('achievementClaim',{reward:format(achievement.reward)});
+        return `<article class="achievement-row"><div class="achievement-copy"><h3>${name}</h3><p>${translate(achievement.descriptionKey)}</p><div class="achievement-progress-track" role="progressbar" aria-label="${name}" aria-valuemin="0" aria-valuemax="${achievement.target}" aria-valuenow="${progress}"><span class="achievement-progress-fill" style="width:${progress/achievement.target*100}%"></span></div><span class="achievement-progress-label">${translate('achievementProgress',{current:format(progress),target:format(achievement.target)})}</span></div><button class="achievement-claim" type="button" data-achievement="${achievement.id}" ${!completed||claimed?'disabled':''}>${buttonText}</button></article>`;
+      }).join('');
     }
     function formatDuration(milliseconds) {
       const totalSeconds=Math.ceil(Math.max(0,milliseconds)/1000);
@@ -480,13 +530,14 @@
     shop.classList.add('collapsed');
     syncShopState();
 
-    document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
+    document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; state.achievementStats.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
     document.getElementById('asteroid-button').addEventListener('click',()=>{
       if (updateAsteroidEvent()) { render(); saveState(); return; }
       const event=state.asteroidEvent;
       if (event.phase!=='active'||!event.asteroidAvailable) { renderAsteroidEvent(); saveState(); return; }
       event.asteroidAvailable=false;
       event.asteroidsCollected+=1;
+      state.achievementStats.asteroids+=1;
       state.stars+=ASTEROID_REWARD;
       render(); saveState(); showToast(translate('asteroidReward',{amount:format(ASTEROID_REWARD)}));
     });
@@ -494,7 +545,16 @@
       const button=event.target.closest('[data-upgrade]'); if (!button) return;
       const item=upgrades.find(upgrade=>upgrade.id===button.dataset.upgrade),cost=costFor(item);
       if (state.stars<cost) return;
+      state.achievementStats.upgradeLevels+=1;
       state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(translate('upgradeUnlocked',{name:StarClickerLocales[currentLanguage].upgradeNames[upgrades.indexOf(item)]}));
+    });
+    document.getElementById('achievement-list').addEventListener('click',event=>{
+      const button=event.target.closest('[data-achievement]'); if (!button) return;
+      const achievement=achievements.find(item=>item.id===button.dataset.achievement);
+      if (!achievement||state.achievementStats.claimed.includes(achievement.id)||state.achievementStats[achievement.stat]<achievement.target) return;
+      state.achievementStats.claimed.push(achievement.id);
+      state.stars+=achievement.reward;
+      render(); saveState(); showToast(translate('achievementUnlocked',{name:translate(achievement.nameKey),reward:format(achievement.reward)}));
     });
     document.getElementById('secret-code-form').addEventListener('submit',event=>{
       event.preventDefault();
@@ -509,7 +569,9 @@
         state.stars+=reward.stars;
         message=translate('codeStars',{amount:format(reward.stars)});
       } else {
+        const previousLevel=state.owned[reward.upgradeId];
         state.owned[reward.upgradeId]=Math.max(state.owned[reward.upgradeId],reward.level);
+        state.achievementStats.upgradeLevels+=state.owned[reward.upgradeId]-previousLevel;
         const itemIndex=upgrades.findIndex(upgrade=>upgrade.id===reward.upgradeId);
         message=translate('codeLevel',{name:StarClickerLocales[currentLanguage].upgradeNames[itemIndex],level:format(state.owned[reward.upgradeId])});
       }
@@ -518,9 +580,10 @@
     document.getElementById('reset-button').addEventListener('click',()=>{
       if (!window.confirm(translate('resetConfirm'))) return;
       const redeemedCodes=state.redeemedCodes;
+      const achievementStats=state.achievementStats;
       updateAsteroidEvent();
       const asteroidEvent=state.asteroidEvent;
-      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; render(); saveState(); showToast(translate('resetStarted'));
+      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; state.achievementStats=achievementStats; render(); saveState(); showToast(translate('resetStarted'));
     });
     applyTranslations();
     updateAsteroidEvent();
