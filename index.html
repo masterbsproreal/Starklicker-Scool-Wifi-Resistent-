@@ -276,6 +276,16 @@
       };
     }
     const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent() });
+    function parseSavedState(raw) {
+      if (!raw) return null;
+      try {
+        const stored=JSON.parse(raw);
+        const savedStars=Number(stored?.stars);
+        if (!stored||typeof stored!=='object'||stored.stars===null||!Number.isFinite(savedStars)) return null;
+        const savedOwned=stored.owned&&typeof stored.owned==='object'&&!Array.isArray(stored.owned)?stored.owned:{};
+        return { stars:Math.max(0,savedStars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item=>[item.id,Math.max(0,Number(savedOwned[item.id])||0)])), redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[], asteroidEvent:normalizeAsteroidEvent(stored.asteroidEvent) };
+      } catch { return null; }
+    }
     let state = loadState();
     let toastTimer;
     const languageSelect=document.getElementById('language-select');
@@ -316,13 +326,15 @@
 
     function loadState() {
       try {
-        const stored = JSON.parse(localStorage.getItem('star-clicker-save'));
-        if (!stored || typeof stored.stars !== 'number' || !stored.owned) return defaultState();
-        return { stars:Math.max(0,stored.stars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item => [item.id,Math.max(0,Number(stored.owned[item.id])||0)])), redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[], asteroidEvent:normalizeAsteroidEvent(stored.asteroidEvent) };
+        return parseSavedState(localStorage.getItem('star-clicker-save'))||parseSavedState(localStorage.getItem('star-clicker-save-backup'))||defaultState();
       } catch { return defaultState(); }
     }
     function saveState() {
-      try { localStorage.setItem('star-clicker-save',JSON.stringify(state)); } catch { showToast(translate('saveUnavailable')); }
+      try {
+        const current=localStorage.getItem('star-clicker-save');
+        if (parseSavedState(current)) localStorage.setItem('star-clicker-save-backup',current);
+        localStorage.setItem('star-clicker-save',JSON.stringify(state));
+      } catch { showToast(translate('saveUnavailable')); }
     }
     function format(value) { return new Intl.NumberFormat(StarClickerLocales[currentLanguage].locale,{notation:'standard',maximumFractionDigits:0}).format(value); }
     function costFor(item) { return Math.ceil(item.baseCost*Math.pow(1.17,state.owned[item.id])); }
