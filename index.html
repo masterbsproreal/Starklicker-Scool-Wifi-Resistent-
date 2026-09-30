@@ -34,7 +34,7 @@
     .star-button:active .star-art { transform:scale(.91) rotate(-5deg); }
     .star-button:hover::before { transform:scale(1.06); border-color:#ffd05a75; } .star-button:hover::after { transform:scale(.96); border-color:#8ee0bd55; }
     .star-button:focus-visible { outline:2px solid var(--mint); outline-offset:4px; }
-    .star-particle { position:fixed; z-index:5; color:var(--gold); font-size:clamp(16px,4vw,24px); line-height:1; pointer-events:none; text-shadow:0 0 10px #ffd05ac9,0 0 22px #ff806e75; animation:star-flight 900ms cubic-bezier(.16,.74,.36,1) forwards; }
+    .star-particle { position:fixed; z-index:5; color:var(--gold); font-size:32px; line-height:1; pointer-events:none; text-shadow:0 0 14px #ffd05ae0,0 0 30px #ff806e9c; animation:star-flight 900ms cubic-bezier(.16,.74,.36,1) forwards; }
     @keyframes star-flight { 0% { opacity:0; transform:translate(-50%,-50%) scale(.35) rotate(0); } 16% { opacity:1; } 100% { opacity:0; transform:translate(calc(-50% + var(--drift)),calc(-50% - var(--rise))) scale(.15) rotate(var(--spin)); } }
     @keyframes star-twinkle { from { opacity:.38; } to { opacity:.78; } }
     .click-hint { margin:0; color:var(--muted); font-size:13px; } .click-hint strong { color:var(--gold); font-weight:600; }
