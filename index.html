@@ -212,7 +212,7 @@
     function saveState() {
       try { localStorage.setItem('star-clicker-save',JSON.stringify(state)); } catch { showToast('Speichern ist in diesem Browser nicht verfügbar.'); }
     }
-    function format(value) { return new Intl.NumberFormat('de-DE',{notation:value>=100000?'compact':'standard',maximumFractionDigits:value<10?1:0}).format(value); }
+    function format(value) { return new Intl.NumberFormat('de-DE',{notation:'standard',maximumFractionDigits:0}).format(value); }
     function costFor(item) { return Math.ceil(item.baseCost*Math.pow(1.17,state.owned[item.id])); }
     function starsPerClick() { return 1+upgrades.reduce((total,item)=>total+item.click*state.owned[item.id],0); }
     function starsPerSecond() { return upgrades.reduce((total,item)=>total+item.passive*state.owned[item.id],0); }
