@@ -20,7 +20,7 @@
     .wordmark { font-size:15px; font-weight:700; letter-spacing:0; } .wordmark span { color:var(--gold); }
     .connection { display:inline-flex; align-items:center; gap:9px; color:var(--muted); font:11px var(--mono); }
     .connection::before { width:7px; height:7px; border-radius:50%; background:var(--mint); content:''; box-shadow:0 0 12px #8ee0bd90; }
-    main { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.83fr); width:min(1060px,90vw); min-height:calc(100vh - 66px); margin:auto; align-items:center; gap:clamp(42px,8vw,112px); padding:54px 0 66px; }
+    main { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.83fr); width:min(1060px,90vw); min-height:calc(100vh - 66px); margin:auto; align-items:flex-start; gap:clamp(42px,8vw,112px); padding:54px 0 66px; }
     .playfield { text-align:center; }
     .eyebrow { margin:0 0 13px; color:var(--coral); font:11px var(--mono); letter-spacing:0; text-transform:uppercase; }
     h1 { margin:0; font-size:clamp(36px,5vw,54px); line-height:1; letter-spacing:0; }
@@ -41,7 +41,7 @@
     .stats { display:flex; justify-content:center; gap:32px; margin:30px 0 0; }
     .stat { min-width:90px; } .stat-value { margin:0; font:15px var(--mono); font-variant-numeric:tabular-nums; } .stat-label { margin:5px 0 0; color:var(--muted); font-size:11px; }
     .shop {
-      align-self:center;
+      align-self:flex-start;
       width:min(100%, 420px);
       margin:28px auto 0;
       border:1px solid rgba(255,255,255,.12);
@@ -233,21 +233,14 @@
     const shopToggle = document.getElementById('shop-toggle');
 
     function syncShopState() {
-      const mobile = window.innerWidth <= 720;
-      if (mobile) {
-        shop.classList.add('collapsed');
-        shopToggle.setAttribute('aria-expanded', 'false');
-        return;
-      }
       shop.classList.add('collapsed');
       shopToggle.setAttribute('aria-expanded', 'false');
     }
 
     shopToggle.addEventListener('click',()=>{
-      shop.classList.toggle('collapsed');
-      shopToggle.setAttribute('aria-expanded', String(!shop.classList.contains('collapsed')));
+      const isCollapsed = shop.classList.toggle('collapsed');
+      shopToggle.setAttribute('aria-expanded', String(!isCollapsed));
     });
-    window.addEventListener('resize', syncShopState);
 
     shop.classList.add('collapsed');
     syncShopState();
