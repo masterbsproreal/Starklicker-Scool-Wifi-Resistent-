@@ -23,6 +23,9 @@
     .topbar-tools { display:flex; align-items:center; gap:16px; }
     .language-select { max-width:128px; min-height:34px; padding:0 28px 0 10px; border:1px solid #ffffff24; border-radius:5px; color:var(--paper); background:#191e26; cursor:pointer; font:12px var(--sans); }
     .language-select:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
+    .audio-toggle { display:grid; width:34px; height:34px; flex:none; place-items:center; border:1px solid #ffffff24; border-radius:5px; color:var(--gold); background:#191e26; cursor:pointer; font:17px var(--sans); }
+    .audio-toggle:hover { border-color:#ffd05a77; background:#ffd05a12; }
+    .audio-toggle:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
     .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     main { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.83fr); width:min(1060px,90vw); min-height:calc(100vh - 66px); margin:auto; align-items:flex-start; gap:clamp(42px,8vw,112px); padding:54px 0 66px; }
     .playfield { text-align:center; }
@@ -174,6 +177,7 @@
       <select class="language-select" id="language-select" aria-labelledby="language-label">
         <option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="it">Italiano</option><option value="pt">Português</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ru">Русский</option><option value="ja">日本語</option>
       </select>
+      <button class="audio-toggle" id="audio-toggle" type="button" aria-label="Ton ausschalten" aria-pressed="true" title="Ton ausschalten"><span id="audio-toggle-icon" aria-hidden="true">♫</span></button>
       <div class="connection" id="connection-status">OFFLINE BEREIT</div>
     </div>
   </header>
@@ -335,9 +339,96 @@
       } catch { return 'de'; }
     }
     let currentLanguage=loadLanguage();
+    function loadAudioPreference() {
+      try { return localStorage.getItem('star-clicker-audio-enabled')!=='false'; } catch { return true; }
+    }
+    let audioEnabled=loadAudioPreference();
+    let audioContext=null;
+    let audioMasterGain=null;
+    let audioMusicGain=null;
+    let musicTimer=0;
+    let musicNoteIndex=0;
     function translate(key,values={}) {
       const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerAchievementLocales[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||StarClickerAchievementLocales.de[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
+    }
+    function updateAudioToggle() {
+      const label=StarClickerAudioLocales[currentLanguage][audioEnabled?'off':'on'];
+      const button=document.getElementById('audio-toggle');
+      button.setAttribute('aria-label',label);
+      button.setAttribute('aria-pressed',String(audioEnabled));
+      button.title=label;
+      document.getElementById('audio-toggle-icon').textContent=audioEnabled?'♫':'×';
+    }
+    function scheduleAmbientNote() {
+      if (!audioEnabled||!audioContext||!audioMusicGain) return;
+      const notes=[261.63,329.63,392,329.63,293.66,349.23,440,349.23];
+      const start=audioContext.currentTime;
+      const oscillator=audioContext.createOscillator();
+      const envelope=audioContext.createGain();
+      oscillator.type='sine';
+      oscillator.frequency.setValueAtTime(notes[musicNoteIndex],start);
+      envelope.gain.setValueAtTime(0.0001,start);
+      envelope.gain.exponentialRampToValueAtTime(0.24,start+0.18);
+      envelope.gain.exponentialRampToValueAtTime(0.0001,start+1.05);
+      oscillator.connect(envelope); envelope.connect(audioMusicGain);
+      oscillator.start(start); oscillator.stop(start+1.08);
+      musicNoteIndex=(musicNoteIndex+1)%notes.length;
+      musicTimer=window.setTimeout(scheduleAmbientNote,1200);
+    }
+    function ensureAudio() {
+      if (!audioEnabled) return null;
+      const AudioContextClass=window.AudioContext||window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      if (!audioContext) {
+        audioContext=new AudioContextClass();
+        audioMasterGain=audioContext.createGain();
+        audioMasterGain.gain.value=0.48;
+        audioMasterGain.connect(audioContext.destination);
+        audioMusicGain=audioContext.createGain();
+        audioMusicGain.gain.value=0.18;
+        audioMusicGain.connect(audioMasterGain);
+      }
+      if (audioContext.state==='suspended') audioContext.resume().catch(()=>{});
+      if (!musicTimer) scheduleAmbientNote();
+      return audioContext;
+    }
+    function playTone(frequency,duration,volume,delay=0,waveform='sine') {
+      const context=ensureAudio();
+      if (!context) return;
+      const oscillator=context.createOscillator();
+      const envelope=context.createGain();
+      const start=context.currentTime+delay;
+      oscillator.type=waveform;
+      oscillator.frequency.setValueAtTime(frequency,start);
+      envelope.gain.setValueAtTime(0.0001,start);
+      envelope.gain.exponentialRampToValueAtTime(volume,start+0.018);
+      envelope.gain.exponentialRampToValueAtTime(0.0001,start+duration);
+      oscillator.connect(envelope); envelope.connect(audioMasterGain);
+      oscillator.start(start); oscillator.stop(start+duration+0.025);
+    }
+    function playSound(kind) {
+      if (!ensureAudio()) return;
+      const sounds={
+        click:[[660,0.07,0.13,0,'sine'],[880,0.09,0.07,0.035,'sine']],
+        upgrade:[[440,0.12,0.11,0,'triangle'],[554.37,0.14,0.1,0.09,'triangle'],[659.25,0.18,0.1,0.19,'sine']],
+        achievement:[[523.25,0.14,0.12,0,'sine'],[659.25,0.15,0.12,0.11,'sine'],[783.99,0.16,0.12,0.22,'sine'],[1046.5,0.27,0.1,0.34,'sine']],
+        code:[[659.25,0.12,0.1,0,'sine'],[987.77,0.21,0.12,0.1,'sine']]
+      };
+      for (const [frequency,duration,volume,delay,waveform] of sounds[kind]||[]) playTone(frequency,duration,volume,delay,waveform);
+    }
+    function setAudioEnabled(enabled) {
+      audioEnabled=enabled;
+      try { localStorage.setItem('star-clicker-audio-enabled',String(audioEnabled)); } catch {}
+      if (audioEnabled) {
+        const context=ensureAudio();
+        if (context&&audioMasterGain) audioMasterGain.gain.setTargetAtTime(0.48,context.currentTime,0.04);
+      } else {
+        if (musicTimer) window.clearTimeout(musicTimer);
+        musicTimer=0;
+        if (audioContext&&audioMasterGain) audioMasterGain.gain.setTargetAtTime(0.0001,audioContext.currentTime,0.04);
+      }
+      updateAudioToggle();
     }
     function applyTranslations() {
       document.documentElement.lang=currentLanguage;
@@ -354,6 +445,7 @@
       document.getElementById('stats-label').setAttribute('aria-label',translate('statsAria'));
       document.getElementById('asteroid-button').setAttribute('aria-label',translate('asteroidAria',{reward:format(ASTEROID_REWARD)}));
       document.getElementById('asteroid-button').title=translate('asteroidTitle',{reward:format(ASTEROID_REWARD)});
+      updateAudioToggle();
     }
     languageSelect.value=currentLanguage;
     languageSelect.addEventListener('change',()=>{
@@ -362,6 +454,7 @@
       applyTranslations();
       render();
     });
+    document.getElementById('audio-toggle').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
 
     function loadState() {
       try {
@@ -530,7 +623,7 @@
     shop.classList.add('collapsed');
     syncShopState();
 
-    document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; state.achievementStats.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
+    document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; state.achievementStats.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); playSound('click'); });
     document.getElementById('asteroid-button').addEventListener('click',()=>{
       if (updateAsteroidEvent()) { render(); saveState(); return; }
       const event=state.asteroidEvent;
@@ -546,7 +639,7 @@
       const item=upgrades.find(upgrade=>upgrade.id===button.dataset.upgrade),cost=costFor(item);
       if (state.stars<cost) return;
       state.achievementStats.upgradeLevels+=1;
-      state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(translate('upgradeUnlocked',{name:StarClickerLocales[currentLanguage].upgradeNames[upgrades.indexOf(item)]}));
+      state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(translate('upgradeUnlocked',{name:StarClickerLocales[currentLanguage].upgradeNames[upgrades.indexOf(item)]})); playSound('upgrade');
     });
     document.getElementById('achievement-list').addEventListener('click',event=>{
       const button=event.target.closest('[data-achievement]'); if (!button) return;
@@ -554,7 +647,7 @@
       if (!achievement||state.achievementStats.claimed.includes(achievement.id)||state.achievementStats[achievement.stat]<achievement.target) return;
       state.achievementStats.claimed.push(achievement.id);
       state.stars+=achievement.reward;
-      render(); saveState(); showToast(translate('achievementUnlocked',{name:translate(achievement.nameKey),reward:format(achievement.reward)}));
+      render(); saveState(); showToast(translate('achievementUnlocked',{name:translate(achievement.nameKey),reward:format(achievement.reward)})); playSound('achievement');
     });
     document.getElementById('secret-code-form').addEventListener('submit',event=>{
       event.preventDefault();
@@ -575,7 +668,7 @@
         const itemIndex=upgrades.findIndex(upgrade=>upgrade.id===reward.upgradeId);
         message=translate('codeLevel',{name:StarClickerLocales[currentLanguage].upgradeNames[itemIndex],level:format(state.owned[reward.upgradeId])});
       }
-      render(); saveState(); input.value=''; showToast(message);
+      render(); saveState(); input.value=''; showToast(message); playSound('code');
     });
     document.getElementById('reset-button').addEventListener('click',()=>{
       if (!window.confirm(translate('resetConfirm'))) return;

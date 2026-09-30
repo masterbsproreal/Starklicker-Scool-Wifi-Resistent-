@@ -63,3 +63,16 @@ globalThis.StarClickerAchievementLocales = {
   ru:{ achievementsTitle:'Достижения', achievementClicksName:'Звёздный кликер', achievementClicksDesc:'Нажми на звезду 100 раз.', achievementAsteroidsName:'Ловец астероидов', achievementAsteroidsDesc:'Поймай 10 астероидов.', achievementUpgradesName:'Коллекционер улучшений', achievementUpgradesDesc:'Получи 10 уровней улучшений.', achievementProgress:'{current} / {target}', achievementClaim:'Забрать · +{reward} звёзд', achievementClaimed:'Получено', achievementUnlocked:'Достижение: {name} · +{reward} звёзд' },
   ja:{ achievementsTitle:'実績', achievementClicksName:'星のクリック名人', achievementClicksDesc:'星を合計100回タップする', achievementAsteroidsName:'小惑星キャッチャー', achievementAsteroidsDesc:'小惑星を合計10個つかまえる', achievementUpgradesName:'アップグレード収集家', achievementUpgradesDesc:'アップグレードレベルを合計10獲得する', achievementProgress:'{current} / {target}', achievementClaim:'受け取る · 星 +{reward}', achievementClaimed:'受取済み', achievementUnlocked:'実績: {name} · 星 +{reward}' }
 };
+
+globalThis.StarClickerAudioLocales = {
+  de:{ on:'Ton einschalten', off:'Ton ausschalten' },
+  en:{ on:'Turn sound on', off:'Turn sound off' },
+  es:{ on:'Activar sonido', off:'Desactivar sonido' },
+  fr:{ on:'Activer le son', off:'Couper le son' },
+  it:{ on:'Attiva audio', off:'Disattiva audio' },
+  pt:{ on:'Ligar som', off:'Desligar som' },
+  tr:{ on:'Sesi aç', off:'Sesi kapat' },
+  pl:{ on:'Włącz dźwięk', off:'Wyłącz dźwięk' },
+  ru:{ on:'Включить звук', off:'Выключить звук' },
+  ja:{ on:'音をオン', off:'音をオフ' }
+};
