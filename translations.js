@@ -65,14 +65,14 @@ globalThis.StarClickerAchievementLocales = {
 };
 
 globalThis.StarClickerAudioLocales = {
-  de:{ on:'Ton einschalten', off:'Ton ausschalten' },
-  en:{ on:'Turn sound on', off:'Turn sound off' },
-  es:{ on:'Activar sonido', off:'Desactivar sonido' },
-  fr:{ on:'Activer le son', off:'Couper le son' },
-  it:{ on:'Attiva audio', off:'Disattiva audio' },
-  pt:{ on:'Ligar som', off:'Desligar som' },
-  tr:{ on:'Sesi aç', off:'Sesi kapat' },
-  pl:{ on:'Włącz dźwięk', off:'Wyłącz dźwięk' },
-  ru:{ on:'Включить звук', off:'Выключить звук' },
-  ja:{ on:'音をオン', off:'音をオフ' }
+  de:{ on:'Ton einschalten', off:'Ton ausschalten', volume:'Musik- und Effektlautstärke' },
+  en:{ on:'Turn sound on', off:'Turn sound off', volume:'Music and effects volume' },
+  es:{ on:'Activar sonido', off:'Desactivar sonido', volume:'Volumen de música y efectos' },
+  fr:{ on:'Activer le son', off:'Couper le son', volume:'Volume de la musique et des effets' },
+  it:{ on:'Attiva audio', off:'Disattiva audio', volume:'Volume di musica ed effetti' },
+  pt:{ on:'Ligar som', off:'Desligar som', volume:'Volume da música e dos efeitos' },
+  tr:{ on:'Sesi aç', off:'Sesi kapat', volume:'Müzik ve efekt ses düzeyi' },
+  pl:{ on:'Włącz dźwięk', off:'Wyłącz dźwięk', volume:'Głośność muzyki i efektów' },
+  ru:{ on:'Включить звук', off:'Выключить звук', volume:'Громкость музыки и эффектов' },
+  ja:{ on:'音をオン', off:'音をオフ', volume:'音楽と効果音の音量' }
 };

@@ -23,6 +23,11 @@
     .topbar-tools { display:flex; align-items:center; gap:16px; }
     .language-select { max-width:128px; min-height:34px; padding:0 28px 0 10px; border:1px solid #ffffff24; border-radius:5px; color:var(--paper); background:#191e26; cursor:pointer; font:12px var(--sans); }
     .language-select:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
+    .audio-control { display:flex; align-items:center; gap:7px; }
+    .audio-control-icon { color:var(--gold); font-size:15px; }
+    .audio-volume { width:86px; height:28px; margin:0; accent-color:var(--mint); cursor:pointer; }
+    .audio-volume:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
+    .audio-volume-value { width:2.8em; color:var(--muted); font:10px var(--mono); text-align:right; }
     .audio-toggle { display:grid; width:34px; height:34px; flex:none; place-items:center; border:1px solid #ffffff24; border-radius:5px; color:var(--gold); background:#191e26; cursor:pointer; font:17px var(--sans); }
     .audio-toggle:hover { border-color:#ffd05a77; background:#ffd05a12; }
     .audio-toggle:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
@@ -149,6 +154,7 @@
       .topbar { min-height:58px; padding:0 16px; }
       .topbar-tools { gap:8px; }
       .language-select { max-width:112px; }
+      .audio-volume { width:64px; }
       main { grid-template-columns:minmax(0,1fr); align-content:start; width:min(calc(100% - 32px),460px); min-height:calc(100svh - 58px); gap:clamp(38px,8vh,54px); padding:clamp(28px,7vh,44px) 0 40px; }
       .playfield,.shop { width:100%; min-width:0; margin-inline:auto; }
       .star-button { width:min(245px,68vw); margin:22px auto 18px; }
@@ -165,7 +171,7 @@
       .buy-button { min-width:74px; padding-inline:7px; }
       .offline-note { font-size:10px; }
     }
-    @media (max-width:420px) { .connection { display:none; } }
+    @media (max-width:420px) { .connection { display:none; } .topbar-tools { gap:6px; } .language-select { max-width:90px; } .audio-control { gap:4px; } .audio-volume { width:50px; } .audio-volume-value { display:none; } .audio-toggle { width:32px; height:32px; } }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } .asteroid-button { top:50vh!important; transform:translate(-50%,-50%)!important; animation:none!important; } }
   </style>
 </head>
@@ -177,7 +183,13 @@
       <select class="language-select" id="language-select" aria-labelledby="language-label">
         <option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="it">Italiano</option><option value="pt">Português</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ru">Русский</option><option value="ja">日本語</option>
       </select>
-      <button class="audio-toggle" id="audio-toggle" type="button" aria-label="Ton ausschalten" aria-pressed="true" title="Ton ausschalten"><span id="audio-toggle-icon" aria-hidden="true">♫</span></button>
+      <div class="audio-control">
+        <label class="sr-only" id="audio-volume-label" for="audio-volume">Musiklautstärke</label>
+        <span class="audio-control-icon" aria-hidden="true">♫</span>
+        <input class="audio-volume" id="audio-volume" type="range" min="0" max="100" step="1" value="75" aria-labelledby="audio-volume-label" aria-valuetext="75%">
+        <output class="audio-volume-value" id="audio-volume-value" for="audio-volume">75%</output>
+        <button class="audio-toggle" id="audio-toggle" type="button" aria-label="Ton ausschalten" aria-pressed="true" title="Ton ausschalten"><span id="audio-toggle-icon" aria-hidden="true">♫</span></button>
+      </div>
       <div class="connection" id="connection-status">OFFLINE BEREIT</div>
     </div>
   </header>
@@ -343,6 +355,15 @@
       try { return localStorage.getItem('star-clicker-audio-enabled')!=='false'; } catch { return true; }
     }
     let audioEnabled=loadAudioPreference();
+    function loadAudioVolume() {
+      try {
+        const stored=localStorage.getItem('star-clicker-audio-volume');
+        if (stored===null) return 0.75;
+        const saved=Number(stored);
+        return Number.isFinite(saved)?Math.max(0,Math.min(1,saved)):0.75;
+      } catch { return 0.75; }
+    }
+    let audioVolume=loadAudioVolume();
     let audioContext=null;
     let audioMasterGain=null;
     let audioMusicGain=null;
@@ -359,6 +380,13 @@
       button.setAttribute('aria-pressed',String(audioEnabled));
       button.title=label;
       document.getElementById('audio-toggle-icon').textContent=audioEnabled?'♫':'×';
+      const volumeLabel=StarClickerAudioLocales[currentLanguage].volume;
+      const volumeValue=Math.round(audioVolume*100);
+      const volumeControl=document.getElementById('audio-volume');
+      volumeControl.value=String(volumeValue);
+      volumeControl.setAttribute('aria-label',volumeLabel);
+      volumeControl.setAttribute('aria-valuetext',`${volumeValue}%`);
+      document.getElementById('audio-volume-value').textContent=`${volumeValue}%`;
     }
     function scheduleAmbientNote() {
       if (!audioEnabled||!audioContext||!audioMusicGain) return;
@@ -422,12 +450,19 @@
       try { localStorage.setItem('star-clicker-audio-enabled',String(audioEnabled)); } catch {}
       if (audioEnabled) {
         const context=ensureAudio();
-        if (context&&audioMasterGain) audioMasterGain.gain.setTargetAtTime(0.48,context.currentTime,0.04);
+        if (context&&audioMasterGain) audioMasterGain.gain.setTargetAtTime(0.48*audioVolume,context.currentTime,0.04);
       } else {
         if (musicTimer) window.clearTimeout(musicTimer);
         musicTimer=0;
         if (audioContext&&audioMasterGain) audioMasterGain.gain.setTargetAtTime(0.0001,audioContext.currentTime,0.04);
       }
+      updateAudioToggle();
+    }
+    function setAudioVolume(value) {
+      audioVolume=Math.max(0,Math.min(1,Number(value)/100));
+      try { localStorage.setItem('star-clicker-audio-volume',String(audioVolume)); } catch {}
+      const context=audioEnabled?ensureAudio():audioContext;
+      if (context&&audioMasterGain) audioMasterGain.gain.setTargetAtTime(audioEnabled?0.48*audioVolume:0.0001,context.currentTime,0.04);
       updateAudioToggle();
     }
     function applyTranslations() {
@@ -455,6 +490,7 @@
       render();
     });
     document.getElementById('audio-toggle').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
+    document.getElementById('audio-volume').addEventListener('input',event=>setAudioVolume(event.currentTarget.value));
 
     function loadState() {
       try {
