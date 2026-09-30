@@ -50,6 +50,7 @@
       overflow:hidden;
       box-shadow:0 10px 28px rgba(0,0,0,.12);
     }
+    .playfield { display:flex; flex-direction:column; }
     .shop-toggle {
       display:flex;
       align-items:center;
@@ -136,18 +137,18 @@
       </button>
       <p class="click-hint">Tippe den Stern <strong>+<span id="per-click">1</span></strong></p>
       <div class="stats" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label">Klicks</p></div></div>
-      <aside class="shop" aria-labelledby="shop-title" id="shop">
-        <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="true" aria-controls="upgrade-list-panel">
-          <strong>Upgrades</strong>
-          <span aria-hidden="true" class="toggle-indicator">›</span>
-        </button>
-        <div class="shop-panel" id="upgrade-list-panel">
-          <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
-          <div class="upgrade-list" id="upgrade-list"></div>
-          <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> Spielstand wird lokal gespeichert</p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
-        </div>
-      </aside>
     </section>
+    <aside class="shop" aria-labelledby="shop-title" id="shop">
+      <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="false" aria-controls="upgrade-list-panel">
+        <strong>Upgrades</strong>
+        <span aria-hidden="true" class="toggle-indicator">›</span>
+      </button>
+      <div class="shop-panel" id="upgrade-list-panel">
+        <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
+        <div class="upgrade-list" id="upgrade-list"></div>
+        <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> Spielstand wird lokal gespeichert</p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
+      </div>
+    </aside>
   </main>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <script>
