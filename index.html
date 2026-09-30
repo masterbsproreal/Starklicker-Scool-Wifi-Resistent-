@@ -40,7 +40,7 @@
     .click-hint { margin:0; color:var(--muted); font-size:13px; } .click-hint strong { color:var(--gold); font-weight:600; }
     .stats { display:flex; justify-content:center; gap:32px; margin:30px 0 0; }
     .stat { min-width:90px; } .stat-value { margin:0; font:15px var(--mono); font-variant-numeric:tabular-nums; } .stat-label { margin:5px 0 0; color:var(--muted); font-size:11px; }
-    .shop { align-self:center; }
+    .shop { align-self:center; width:min(100%, 420px); margin:28px auto 0; border:1px solid rgba(255,255,255,.12); border-radius:18px; background:rgba(20,24,30,.6); overflow:hidden; box-shadow:0 10px 28px rgba(0,0,0,.12); }
     .shop-toggle {
       display:flex;
       align-items:center;
@@ -95,17 +95,6 @@
       .stats { margin-top:23px; }
       .shop {
         margin-top:22px;
-        border:1px solid rgba(255,255,255,.12);
-        border-radius:18px;
-        background:rgba(20,24,30,.6);
-        overflow:hidden;
-        box-shadow:0 10px 28px rgba(0,0,0,.12);
-      }
-      .shop-toggle {
-        padding:12px 14px;
-      }
-      .shop-toggle strong {
-        font-size:18px;
       }
       .shop.collapsed .shop-panel { display:none; }
       .shop:not(.collapsed) .shop-panel { display:block; }
@@ -249,15 +238,12 @@
     }
 
     shopToggle.addEventListener('click',()=>{
-      if (window.innerWidth > 720) return;
       shop.classList.toggle('collapsed');
       shopToggle.setAttribute('aria-expanded', String(!shop.classList.contains('collapsed')));
     });
     window.addEventListener('resize', syncShopState);
 
-    if (window.innerWidth <= 720) {
-      shop.classList.add('collapsed');
-    }
+    shop.classList.add('collapsed');
     syncShopState();
 
     document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
