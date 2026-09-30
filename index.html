@@ -453,13 +453,16 @@
     const shopToggle = document.getElementById('shop-toggle');
 
     function syncShopState() {
-      shop.classList.add('collapsed');
-      shopToggle.setAttribute('aria-expanded', 'false');
+      let collapsed=true;
+      try { collapsed=localStorage.getItem('star-clicker-shop-open')!=='true'; } catch {}
+      if (collapsed) shop.classList.add('collapsed'); else shop.classList.remove('collapsed');
+      shopToggle.setAttribute('aria-expanded', String(!collapsed));
     }
 
     shopToggle.addEventListener('click',()=>{
-      const isCollapsed = shop.classList.toggle('collapsed');
-      shopToggle.setAttribute('aria-expanded', String(!isCollapsed));
+      const collapsed=shop.classList.toggle('collapsed');
+      shopToggle.setAttribute('aria-expanded', String(!collapsed));
+      try { localStorage.setItem('star-clicker-shop-open',String(!collapsed)); } catch {}
     });
 
     shop.classList.add('collapsed');
