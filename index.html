@@ -192,7 +192,12 @@
       { id:'big-bang', name:'Urknall-Maschine', description:'+75 Mrd. Sterne pro Sekunde', icon:'✹', baseCost:187500000000000, click:0, passive:75000000000 },
       { id:'singularity', name:'Singularität', description:'+500 Mrd. Sterne pro Sekunde', icon:'◉', baseCost:1000000000000000, click:0, passive:500000000000 }
     ];
-    const secretCodeRewards = new Map([['7110',1000000]]);
+    const secretCodeRewards = new Map([
+      ['7110',{ stars:1000000 }],
+      ['2410',{ stars:2410000 }],
+      ['3388',{ stars:50000000 }],
+      ['FREEUPGRADE',{ upgradeId:'asteroid', level:10 }]
+    ]);
     const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[] });
     let state = loadState();
     let toastTimer;
@@ -274,8 +279,16 @@
       if (!reward) { showToast('Dieser Secret Code ist ungültig.'); return; }
       if (state.redeemedCodes.includes(code)) { showToast('Dieser Code wurde bereits eingelöst.'); return; }
       state.redeemedCodes.push(code);
-      state.stars+=reward;
-      render(); saveState(); input.value=''; showToast(`Code eingelöst: +${format(reward)} Sterne`);
+      let message;
+      if (reward.stars) {
+        state.stars+=reward.stars;
+        message=`Code eingelöst: +${format(reward.stars)} Sterne`;
+      } else {
+        state.owned[reward.upgradeId]=Math.max(state.owned[reward.upgradeId],reward.level);
+        const item=upgrades.find(upgrade=>upgrade.id===reward.upgradeId);
+        message=`Code eingelöst: ${item.name} auf Level ${state.owned[reward.upgradeId]}`;
+      }
+      render(); saveState(); input.value=''; showToast(message);
     });
     document.getElementById('reset-button').addEventListener('click',()=>{
       if (!window.confirm('Wirklich von vorne anfangen? Dein Spielstand wird gelöscht.')) return;
