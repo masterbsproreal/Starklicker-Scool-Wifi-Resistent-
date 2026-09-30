@@ -149,16 +149,16 @@
         <strong>Upgrades</strong>
         <span aria-hidden="true" class="toggle-indicator">›</span>
       </button>
+      <form class="secret-code-form" id="secret-code-form">
+        <label for="secret-code-input">Secret Codes</label>
+        <div class="secret-code-controls">
+          <input class="secret-code-input" id="secret-code-input" type="text" maxlength="32" autocomplete="off" placeholder="Code eingeben" required>
+          <button class="secret-code-submit" type="submit">Einlösen</button>
+        </div>
+      </form>
       <div class="shop-panel" id="upgrade-list-panel">
         <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
         <div class="upgrade-list" id="upgrade-list"></div>
-        <form class="secret-code-form" id="secret-code-form">
-          <label for="secret-code-input">Secret Codes</label>
-          <div class="secret-code-controls">
-            <input class="secret-code-input" id="secret-code-input" type="text" maxlength="32" autocomplete="off" placeholder="Code eingeben" required>
-            <button class="secret-code-submit" type="submit">Einlösen</button>
-          </div>
-        </form>
         <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> Spielstand wird lokal gespeichert</p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
       </div>
     </aside>
