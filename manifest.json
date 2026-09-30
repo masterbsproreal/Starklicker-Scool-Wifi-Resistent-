@@ -1,0 +1,11 @@
+{
+  "name": "Star Klicker",
+  "short_name": "Star Klicker",
+  "description": "Sterne sammeln und dein Universum ausbauen.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101319",
+  "theme_color": "#101319",
+  "icons": [{ "src": "star.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

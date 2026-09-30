@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101319">
+  <meta name="description" content="Ein kleiner Stern-Klicker, der nach dem ersten Laden auch offline funktioniert.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="star.svg" type="image/svg+xml">
+  <title>Star Klicker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+    :root { color-scheme: dark; --ink:#101319; --panel:#191e26; --line:#343b45; --muted:#a3aab4; --paper:#f3f0e8; --gold:#ffd05a; --coral:#ff806e; --mint:#8ee0bd; --mono:'DM Mono',monospace; --sans:'Space Grotesk','Trebuchet MS',sans-serif; }
+    * { box-sizing:border-box; }
+    body { position:relative; min-width:320px; min-height:100vh; margin:0; overflow-x:hidden; color:var(--paper); background-color:var(--ink); background-image:radial-gradient(ellipse at 18% 14%,#27616b35,transparent 34%),radial-gradient(ellipse at 82% 57%,#9c493425,transparent 38%),linear-gradient(135deg,#111923,#101319 52%,#1b171b); background-attachment:fixed; font-family:var(--sans); }
+    body::before { position:fixed; inset:0; z-index:0; background-image:radial-gradient(1.5px 1.5px at 8% 17%,#fff7d8 98%,transparent),radial-gradient(1px 1px at 22% 73%,#bfeaff 98%,transparent),radial-gradient(2px 2px at 37% 31%,#fff 98%,transparent),radial-gradient(1px 1px at 53% 84%,#ffdca0 98%,transparent),radial-gradient(1.5px 1.5px at 68% 14%,#fff 98%,transparent),radial-gradient(1px 1px at 78% 44%,#c4e8ff 98%,transparent),radial-gradient(2px 2px at 92% 79%,#fff1c6 98%,transparent),radial-gradient(1px 1px at 95% 24%,#fff 98%,transparent); background-repeat:repeat; background-size:347px 281px; content:''; opacity:.65; pointer-events:none; animation:star-twinkle 7s ease-in-out infinite alternate; }
+    body > * { position:relative; z-index:1; }
+    button { color:inherit; font:inherit; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; min-height:66px; padding:0 5vw; border-bottom:1px solid #ffffff16; }
+    .wordmark { font-size:15px; font-weight:700; letter-spacing:0; } .wordmark span { color:var(--gold); }
+    .connection { display:inline-flex; align-items:center; gap:9px; color:var(--muted); font:11px var(--mono); }
+    .connection::before { width:7px; height:7px; border-radius:50%; background:var(--mint); content:''; box-shadow:0 0 12px #8ee0bd90; }
+    main { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.83fr); width:min(1060px,90vw); min-height:calc(100vh - 66px); margin:auto; align-items:center; gap:clamp(42px,8vw,112px); padding:54px 0 66px; }
+    .playfield { text-align:center; }
+    .eyebrow { margin:0 0 13px; color:var(--coral); font:11px var(--mono); letter-spacing:0; text-transform:uppercase; }
+    h1 { margin:0; font-size:clamp(36px,5vw,54px); line-height:1; letter-spacing:0; }
+    .count { margin:15px 0 0; font:500 clamp(25px,4vw,38px) var(--mono); font-variant-numeric:tabular-nums; }
+    .count-label { margin:4px 0 0; color:var(--muted); font-size:13px; }
+    .star-button { position:relative; display:grid; width:min(290px,65vw); aspect-ratio:1; margin:31px auto 18px; place-items:center; border:0; border-radius:50%; background:radial-gradient(circle,#ffd05a1a 0 44%,#ff806e10 45% 57%,transparent 58%); cursor:pointer; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+    .star-button::before,.star-button::after { position:absolute; inset:11%; border:1px solid #ffd05a31; border-radius:50%; content:''; transition:transform 180ms ease,border-color 180ms ease; }
+    .star-button::after { inset:3%; border-color:#8ee0bd26; }
+    .star-art { width:65%; overflow:visible; filter:drop-shadow(0 0 17px #ffd05a60); transition:transform 130ms ease,filter 130ms ease; }
+    .star-button:hover .star-art { transform:scale(1.055) rotate(4deg); filter:drop-shadow(0 0 28px #ffd05a9c); }
+    .star-button:active .star-art { transform:scale(.91) rotate(-5deg); }
+    .star-button:hover::before { transform:scale(1.06); border-color:#ffd05a75; } .star-button:hover::after { transform:scale(.96); border-color:#8ee0bd55; }
+    .star-button:focus-visible { outline:2px solid var(--mint); outline-offset:4px; }
+    .star-particle { position:fixed; z-index:5; color:var(--gold); font-size:clamp(16px,4vw,24px); line-height:1; pointer-events:none; text-shadow:0 0 10px #ffd05ac9,0 0 22px #ff806e75; animation:star-flight 900ms cubic-bezier(.16,.74,.36,1) forwards; }
+    @keyframes star-flight { 0% { opacity:0; transform:translate(-50%,-50%) scale(.35) rotate(0); } 16% { opacity:1; } 100% { opacity:0; transform:translate(calc(-50% + var(--drift)),calc(-50% - var(--rise))) scale(.15) rotate(var(--spin)); } }
+    @keyframes star-twinkle { from { opacity:.38; } to { opacity:.78; } }
+    .click-hint { margin:0; color:var(--muted); font-size:13px; } .click-hint strong { color:var(--gold); font-weight:600; }
+    .stats { display:flex; justify-content:center; gap:32px; margin:30px 0 0; }
+    .stat { min-width:90px; } .stat-value { margin:0; font:15px var(--mono); font-variant-numeric:tabular-nums; } .stat-label { margin:5px 0 0; color:var(--muted); font-size:11px; }
+    .shop { align-self:center; }
+    .shop-heading { display:flex; align-items:end; justify-content:space-between; padding-bottom:15px; border-bottom:1px solid var(--line); }
+    .shop-heading h2 { margin:0; font-size:23px; } .shop-heading p { margin:0 0 2px; color:var(--muted); font:10px var(--mono); }
+    .upgrade-list { display:grid; }
+    .upgrade { display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:13px; min-height:86px; padding:12px 0; border-bottom:1px solid #ffffff17; }
+    .upgrade-icon { display:grid; width:42px; height:42px; place-items:center; border:1px solid #ffffff20; border-radius:8px; color:var(--gold); background:#ffffff08; font-size:20px; }
+    .upgrade:nth-child(2) .upgrade-icon { color:var(--coral); } .upgrade:nth-child(3) .upgrade-icon { color:var(--mint); } .upgrade:nth-child(4) .upgrade-icon { color:#b6a6ff; }
+    .upgrade h3 { margin:0; font-size:14px; } .upgrade-copy { min-width:0; } .upgrade-copy p { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.4; }
+    .buy-button { min-width:82px; padding:8px 10px; border:1px solid #ffd05a67; border-radius:5px; color:var(--gold); background:#ffd05a0c; cursor:pointer; font:11px var(--mono); transition:background 120ms ease,color 120ms ease,opacity 120ms ease; }
+    .buy-button:hover:not(:disabled) { color:var(--ink); background:var(--gold); } .buy-button:disabled { border-color:#343b45; color:#78808a; cursor:not-allowed; }
+    .buy-button:focus-visible,.reset-button:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
+    .shop-footer { display:flex; justify-content:space-between; align-items:center; padding-top:17px; }
+    .offline-note { display:flex; align-items:center; gap:8px; margin:0; color:var(--muted); font-size:11px; } .offline-note span { color:var(--mint); }
+    .reset-button { padding:5px 0 5px 8px; border:0; color:#89919b; background:none; cursor:pointer; font-size:11px; } .reset-button:hover { color:var(--coral); }
+    .toast { position:fixed; left:50%; bottom:24px; z-index:2; padding:11px 16px; border:1px solid #8ee0bd55; border-radius:5px; color:var(--paper); background:#191e26; font-size:13px; opacity:0; pointer-events:none; transform:translate(-50%,8px); transition:opacity 180ms ease,transform 180ms ease; }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    @media (max-width:720px) {
+      .topbar { min-height:58px; padding:0 16px; }
+      main { grid-template-columns:minmax(0,1fr); align-content:start; width:min(calc(100% - 32px),460px); min-height:calc(100svh - 58px); gap:clamp(38px,8vh,54px); padding:clamp(28px,7vh,44px) 0 40px; }
+      .playfield,.shop { width:100%; min-width:0; margin-inline:auto; }
+      .star-button { width:min(245px,68vw); margin:22px auto 18px; }
+      .stats { margin-top:23px; }
+      .shop-heading h2 { font-size:21px; }
+      .upgrade { grid-template-columns:40px minmax(0,1fr) auto; gap:10px; }
+      .upgrade-icon { width:38px; height:38px; }
+      .shop-footer { flex-wrap:wrap; gap:8px 12px; }
+    }
+    @media (max-width:360px) {
+      main { width:calc(100% - 24px); }
+      .upgrade { grid-template-columns:34px minmax(0,1fr) auto; gap:8px; }
+      .upgrade-icon { width:34px; height:34px; }
+      .buy-button { min-width:74px; padding-inline:7px; }
+      .offline-note { font-size:10px; }
+    }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } }
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="wordmark">STAR<span>CLICKER</span></div><div class="connection">OFFLINE BEREIT</div></header>
+  <main>
+    <section class="playfield" aria-label="Stern sammeln">
+      <p class="eyebrow">Dein kleines Universum</p><h1>Sternenstaub</h1>
+      <p class="count" id="stars" aria-live="polite">0</p><p class="count-label">gesammelte Sterne</p>
+      <button class="star-button" id="star-button" type="button" aria-label="Stern anklicken und Sterne sammeln">
+        <svg class="star-art" viewBox="0 0 200 200" role="img" aria-hidden="true">
+          <defs><linearGradient id="star-fill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4b8"/><stop offset=".48" stop-color="#ffd05a"/><stop offset="1" stop-color="#ff806e"/></linearGradient></defs>
+          <path d="M100 10 121 72 187 74 135 114 153 179 100 140 47 179 65 114 13 74 79 72Z" fill="url(#star-fill)" stroke="#fff1b7" stroke-width="2" stroke-linejoin="round"/>
+          <path d="m100 34 13 45 47 1-37 28 13 47-36-28-36 28 13-47-37-28 47-1Z" fill="#fff4b8" opacity=".22"/><circle cx="100" cy="102" r="7" fill="#fff8d9"/>
+        </svg>
+      </button>
+      <p class="click-hint">Tippe den Stern <strong>+<span id="per-click">1</span></strong></p>
+      <div class="stats" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label">Klicks</p></div></div>
+    </section>
+    <section class="shop" aria-labelledby="shop-title">
+      <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
+      <div class="upgrade-list" id="upgrade-list"></div>
+      <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> Spielstand wird lokal gespeichert</p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const upgrades = [
+      { id:'dust', name:'Sternenstaub', description:'+1 Stern pro Klick', icon:'✧', baseCost:5, click:1, passive:0 },
+      { id:'spark', name:'Sternenfunke', description:'+1 Stern pro Klick', icon:'✦', baseCost:15, click:1, passive:0 },
+      { id:'asteroid', name:'Mini-Asteroid', description:'+3 Sterne pro Klick', icon:'●', baseCost:35, click:3, passive:0 },
+      { id:'comet', name:'Kometen-Fabrik', description:'+1 Stern pro Sekunde', icon:'☄', baseCost:75, click:0, passive:1 },
+      { id:'ultra', name:'Ultra Star', description:'+5 Sterne pro Klick', icon:'✧', baseCost:100, click:5, passive:0 },
+      { id:'moon', name:'Mondstation', description:'+3 Sterne pro Sekunde', icon:'◐', baseCost:250, click:0, passive:3 },
+      { id:'galaxy', name:'Mini-Galaxie', description:'+8 Sterne pro Sekunde', icon:'◉', baseCost:500, click:0, passive:8 },
+      { id:'solar', name:'Sonnenkollektor', description:'+15 Sterne pro Sekunde', icon:'☼', baseCost:1500, click:0, passive:15 },
+      { id:'meteor', name:'Meteoritenschwarm', description:'+20 Sterne pro Klick', icon:'☄', baseCost:7500, click:20, passive:0 },
+      { id:'nova', name:'Nova-Kern', description:'+80 Sterne pro Sekunde', icon:'✹', baseCost:35000, click:0, passive:80 },
+      { id:'red-giant', name:'Roter Riese', description:'+300 Sterne pro Sekunde', icon:'●', baseCost:175000, click:0, passive:300 },
+      { id:'supernova', name:'Supernova', description:'+500 Sterne pro Klick', icon:'✷', baseCost:875000, click:500, passive:0 },
+      { id:'pulsar', name:'Pulsar-Sender', description:'+2.500 Sterne pro Sekunde', icon:'⊛', baseCost:4300000, click:0, passive:2500 },
+      { id:'neutron', name:'Neutronenstern', description:'+12.000 Sterne pro Sekunde', icon:'✹', baseCost:21000000, click:0, passive:12000 },
+      { id:'black-hole', name:'Schwarzes Loch', description:'+50.000 Sterne pro Sekunde', icon:'◉', baseCost:105000000, click:0, passive:50000 },
+      { id:'quasar', name:'Quasar', description:'+220.000 Sterne pro Sekunde', icon:'✧', baseCost:525000000, click:0, passive:220000 },
+      { id:'cluster', name:'Sternhaufen', description:'+1 Mio. Sterne pro Sekunde', icon:'✺', baseCost:2500000000, click:0, passive:1000000 },
+      { id:'galaxy-engine', name:'Galaxienmotor', description:'+5 Mio. Sterne pro Sekunde', icon:'⚙', baseCost:12500000000, click:0, passive:5000000 },
+      { id:'universe', name:'Universums-Saat', description:'+25 Mio. Sterne pro Sekunde', icon:'✺', baseCost:62500000000, click:0, passive:25000000 },
+      { id:'multiverse', name:'Multiversum', description:'+120 Mio. Sterne pro Sekunde', icon:'◎', baseCost:312500000000, click:0, passive:120000000 },
+      { id:'cosmic-gate', name:'Kosmisches Tor', description:'+600 Mio. Sterne pro Sekunde', icon:'◈', baseCost:1500000000000, click:0, passive:600000000 },
+      { id:'dimension', name:'Dimensionsmotor', description:'+3 Mrd. Sterne pro Sekunde', icon:'⟡', baseCost:7500000000000, click:0, passive:3000000000 },
+      { id:'infinity-forge', name:'Unendlichkeits-Schmiede', description:'+15 Mrd. Sterne pro Sekunde', icon:'∞', baseCost:37500000000000, click:0, passive:15000000000 },
+      { id:'big-bang', name:'Urknall-Maschine', description:'+75 Mrd. Sterne pro Sekunde', icon:'✹', baseCost:187500000000000, click:0, passive:75000000000 },
+      { id:'singularity', name:'Singularität', description:'+500 Mrd. Sterne pro Sekunde', icon:'◉', baseCost:1000000000000000, click:0, passive:500000000000 }
+    ];
+    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])) });
+    let state = loadState();
+    let toastTimer;
+
+    function loadState() {
+      try {
+        const stored = JSON.parse(localStorage.getItem('star-clicker-save'));
+        if (!stored || typeof stored.stars !== 'number' || !stored.owned) return defaultState();
+        return { stars:Math.max(0,stored.stars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item => [item.id,Math.max(0,Number(stored.owned[item.id])||0)])) };
+      } catch { return defaultState(); }
+    }
+    function saveState() {
+      try { localStorage.setItem('star-clicker-save',JSON.stringify(state)); } catch { showToast('Speichern ist in diesem Browser nicht verfügbar.'); }
+    }
+    function format(value) { return new Intl.NumberFormat('de-DE',{notation:value>=100000?'compact':'standard',maximumFractionDigits:value<10?1:0}).format(value); }
+    function costFor(item) { return Math.ceil(item.baseCost*Math.pow(1.17,state.owned[item.id])); }
+    function starsPerClick() { return 1+upgrades.reduce((total,item)=>total+item.click*state.owned[item.id],0); }
+    function starsPerSecond() { return upgrades.reduce((total,item)=>total+item.passive*state.owned[item.id],0); }
+    function render() {
+      document.getElementById('stars').textContent=format(state.stars);
+      document.getElementById('per-click').textContent=format(starsPerClick());
+      document.getElementById('per-second').textContent=format(starsPerSecond());
+      document.getElementById('click-total').textContent=format(state.clicks);
+      document.getElementById('upgrade-list').innerHTML=upgrades.map(item=>{
+        const cost=costFor(item),count=state.owned[item.id];
+        return `<article class="upgrade"><div class="upgrade-icon" aria-hidden="true">${item.icon}</div><div class="upgrade-copy"><h3>${item.name} <span style="color:var(--muted);font:10px var(--mono)">×${count}</span></h3><p>${item.description}</p></div><button class="buy-button" type="button" data-upgrade="${item.id}" ${state.stars<cost?'disabled':''}>${format(cost)} ✦</button></article>`;
+      }).join('');
+    }
+    function showToast(message) {
+      const toast=document.getElementById('toast'); toast.textContent=message; toast.classList.add('show');
+      clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),1800);
+    }
+    function flyStarsFrom(button) {
+      const bounds=button.getBoundingClientRect();
+      const symbols=['✦','✧','✺'];
+      for (let index=0;index<5;index+=1) {
+        const particle=document.createElement('span');
+        particle.className='star-particle';
+        particle.textContent=symbols[Math.floor(Math.random()*symbols.length)];
+        particle.style.left=`${bounds.left+bounds.width/2}px`;
+        particle.style.top=`${bounds.top+bounds.height/2}px`;
+        particle.style.setProperty('--drift',`${Math.round((Math.random()-.5)*130)}px`);
+        particle.style.setProperty('--rise',`${80+Math.round(Math.random()*90)}px`);
+        particle.style.setProperty('--spin',`${Math.round((Math.random()-.5)*180)}deg`);
+        particle.style.animationDelay=`${index*35}ms`;
+        particle.setAttribute('aria-hidden','true');
+        particle.addEventListener('animationend',()=>particle.remove(),{once:true});
+        document.body.appendChild(particle);
+      }
+    }
+    document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); });
+    document.getElementById('upgrade-list').addEventListener('click',event=>{
+      const button=event.target.closest('[data-upgrade]'); if (!button) return;
+      const item=upgrades.find(upgrade=>upgrade.id===button.dataset.upgrade),cost=costFor(item);
+      if (state.stars<cost) return;
+      state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(`${item.name} freigeschaltet`);
+    });
+    document.getElementById('reset-button').addEventListener('click',()=>{
+      if (!window.confirm('Wirklich von vorne anfangen? Dein Spielstand wird gelöscht.')) return;
+      state=defaultState(); render(); saveState(); showToast('Neues Sternen-Abenteuer gestartet');
+    });
+    window.setInterval(()=>{ const income=starsPerSecond(); if (income<=0) return; state.stars+=income; render(); saveState(); },1000);
+    render();
+    if ('serviceWorker' in navigator && location.protocol!=='file:') window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+  </script>
+</body>
+</html>
