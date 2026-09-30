@@ -96,12 +96,12 @@
     .buy-button { min-width:82px; padding:8px 10px; border:1px solid #ffd05a67; border-radius:5px; color:var(--gold); background:#ffd05a0c; cursor:pointer; font:11px var(--mono); transition:background 120ms ease,color 120ms ease,opacity 120ms ease; }
     .buy-button:hover:not(:disabled) { color:var(--ink); background:var(--gold); } .buy-button:disabled { border-color:#343b45; color:#78808a; cursor:not-allowed; }
     .buy-button:focus-visible,.reset-button:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
-    .secret-code-form { margin-top:16px; padding:14px 0 4px; border-top:1px solid #ffffff17; }
-    .secret-code-form label { display:block; margin-bottom:9px; font-size:13px; font-weight:600; }
-    .secret-code-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
-    .secret-code-input { min-width:0; padding:9px 10px; border:1px solid #ffffff20; border-radius:5px; color:var(--paper); background:#101319aa; font:12px var(--mono); }
+    .secret-code-form { margin-top:16px; padding:16px; border:1px solid #8ee0bd38; border-radius:8px; background:#101319aa; }
+    .secret-code-form label { display:block; margin-bottom:12px; font-size:15px; font-weight:600; }
+    .secret-code-controls { display:grid; grid-template-columns:minmax(0,1fr) minmax(104px,auto); gap:10px; }
+    .secret-code-input { width:100%; min-width:0; min-height:46px; padding:11px 12px; border:1px solid #ffffff28; border-radius:5px; color:var(--paper); background:#101319; font:14px var(--mono); }
     .secret-code-input:focus-visible,.secret-code-submit:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
-    .secret-code-submit { padding:8px 12px; border:1px solid #8ee0bd66; border-radius:5px; color:var(--mint); background:#8ee0bd0c; cursor:pointer; font-size:12px; font-weight:600; }
+    .secret-code-submit { min-height:46px; padding:10px 14px; border:1px solid #8ee0bd88; border-radius:5px; color:var(--mint); background:#8ee0bd12; cursor:pointer; font-size:13px; font-weight:600; }
     .shop-footer { display:flex; justify-content:space-between; align-items:center; padding-top:17px; }
     .offline-note { display:flex; align-items:center; gap:8px; margin:0; color:var(--muted); font-size:11px; } .offline-note span { color:var(--mint); }
     .reset-button { padding:5px 0 5px 8px; border:0; color:#89919b; background:none; cursor:pointer; font-size:11px; } .reset-button:hover { color:var(--coral); }
