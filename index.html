@@ -96,6 +96,12 @@
     .buy-button { min-width:82px; padding:8px 10px; border:1px solid #ffd05a67; border-radius:5px; color:var(--gold); background:#ffd05a0c; cursor:pointer; font:11px var(--mono); transition:background 120ms ease,color 120ms ease,opacity 120ms ease; }
     .buy-button:hover:not(:disabled) { color:var(--ink); background:var(--gold); } .buy-button:disabled { border-color:#343b45; color:#78808a; cursor:not-allowed; }
     .buy-button:focus-visible,.reset-button:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
+    .secret-code-form { margin-top:16px; padding:14px 0 4px; border-top:1px solid #ffffff17; }
+    .secret-code-form label { display:block; margin-bottom:9px; font-size:13px; font-weight:600; }
+    .secret-code-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+    .secret-code-input { min-width:0; padding:9px 10px; border:1px solid #ffffff20; border-radius:5px; color:var(--paper); background:#101319aa; font:12px var(--mono); }
+    .secret-code-input:focus-visible,.secret-code-submit:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
+    .secret-code-submit { padding:8px 12px; border:1px solid #8ee0bd66; border-radius:5px; color:var(--mint); background:#8ee0bd0c; cursor:pointer; font-size:12px; font-weight:600; }
     .shop-footer { display:flex; justify-content:space-between; align-items:center; padding-top:17px; }
     .offline-note { display:flex; align-items:center; gap:8px; margin:0; color:var(--muted); font-size:11px; } .offline-note span { color:var(--mint); }
     .reset-button { padding:5px 0 5px 8px; border:0; color:#89919b; background:none; cursor:pointer; font-size:11px; } .reset-button:hover { color:var(--coral); }
@@ -146,6 +152,13 @@
       <div class="shop-panel" id="upgrade-list-panel">
         <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
         <div class="upgrade-list" id="upgrade-list"></div>
+        <form class="secret-code-form" id="secret-code-form">
+          <label for="secret-code-input">Secret Codes</label>
+          <div class="secret-code-controls">
+            <input class="secret-code-input" id="secret-code-input" type="text" maxlength="32" autocomplete="off" placeholder="Code eingeben" required>
+            <button class="secret-code-submit" type="submit">Einlösen</button>
+          </div>
+        </form>
         <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> Spielstand wird lokal gespeichert</p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
       </div>
     </aside>
@@ -179,7 +192,8 @@
       { id:'big-bang', name:'Urknall-Maschine', description:'+75 Mrd. Sterne pro Sekunde', icon:'✹', baseCost:187500000000000, click:0, passive:75000000000 },
       { id:'singularity', name:'Singularität', description:'+500 Mrd. Sterne pro Sekunde', icon:'◉', baseCost:1000000000000000, click:0, passive:500000000000 }
     ];
-    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])) });
+    const secretCodeRewards = new Map([['7110',1000000]]);
+    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[] });
     let state = loadState();
     let toastTimer;
 
@@ -187,7 +201,7 @@
       try {
         const stored = JSON.parse(localStorage.getItem('star-clicker-save'));
         if (!stored || typeof stored.stars !== 'number' || !stored.owned) return defaultState();
-        return { stars:Math.max(0,stored.stars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item => [item.id,Math.max(0,Number(stored.owned[item.id])||0)])) };
+        return { stars:Math.max(0,stored.stars), clicks:Math.max(0,Number(stored.clicks)||0), owned:Object.fromEntries(upgrades.map(item => [item.id,Math.max(0,Number(stored.owned[item.id])||0)])), redeemedCodes:Array.isArray(stored.redeemedCodes)?stored.redeemedCodes.filter(code=>typeof code==='string'):[] };
       } catch { return defaultState(); }
     }
     function saveState() {
@@ -252,9 +266,21 @@
       if (state.stars<cost) return;
       state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(`${item.name} freigeschaltet`);
     });
+    document.getElementById('secret-code-form').addEventListener('submit',event=>{
+      event.preventDefault();
+      const input=document.getElementById('secret-code-input');
+      const code=input.value.trim().toUpperCase();
+      const reward=secretCodeRewards.get(code);
+      if (!reward) { showToast('Dieser Secret Code ist ungültig.'); return; }
+      if (state.redeemedCodes.includes(code)) { showToast('Dieser Code wurde bereits eingelöst.'); return; }
+      state.redeemedCodes.push(code);
+      state.stars+=reward;
+      render(); saveState(); input.value=''; showToast(`Code eingelöst: +${format(reward)} Sterne`);
+    });
     document.getElementById('reset-button').addEventListener('click',()=>{
       if (!window.confirm('Wirklich von vorne anfangen? Dein Spielstand wird gelöscht.')) return;
-      state=defaultState(); render(); saveState(); showToast('Neues Sternen-Abenteuer gestartet');
+      const redeemedCodes=state.redeemedCodes;
+      state=defaultState(); state.redeemedCodes=redeemedCodes; render(); saveState(); showToast('Neues Sternen-Abenteuer gestartet');
     });
     window.setInterval(()=>{ const income=starsPerSecond(); if (income<=0) return; state.stars+=income; render(); saveState(); },1000);
     render();
