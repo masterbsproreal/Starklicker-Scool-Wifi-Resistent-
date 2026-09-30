@@ -20,6 +20,10 @@
     .wordmark { font-size:15px; font-weight:700; letter-spacing:0; } .wordmark span { color:var(--gold); }
     .connection { display:inline-flex; align-items:center; gap:9px; color:var(--muted); font:11px var(--mono); }
     .connection::before { width:7px; height:7px; border-radius:50%; background:var(--mint); content:''; box-shadow:0 0 12px #8ee0bd90; }
+    .topbar-tools { display:flex; align-items:center; gap:16px; }
+    .language-select { max-width:128px; min-height:34px; padding:0 28px 0 10px; border:1px solid #ffffff24; border-radius:5px; color:var(--paper); background:#191e26; cursor:pointer; font:12px var(--sans); }
+    .language-select:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
     main { display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.83fr); width:min(1060px,90vw); min-height:calc(100vh - 66px); margin:auto; align-items:flex-start; gap:clamp(42px,8vw,112px); padding:54px 0 66px; }
     .playfield { text-align:center; }
     .eyebrow { margin:0 0 13px; color:var(--coral); font:11px var(--mono); letter-spacing:0; text-transform:uppercase; }
@@ -124,6 +128,8 @@
     .toast.show { opacity:1; transform:translate(-50%,0); }
     @media (max-width:720px) {
       .topbar { min-height:58px; padding:0 16px; }
+      .topbar-tools { gap:8px; }
+      .language-select { max-width:112px; }
       main { grid-template-columns:minmax(0,1fr); align-content:start; width:min(calc(100% - 32px),460px); min-height:calc(100svh - 58px); gap:clamp(38px,8vh,54px); padding:clamp(28px,7vh,44px) 0 40px; }
       .playfield,.shop { width:100%; min-width:0; margin-inline:auto; }
       .star-button { width:min(245px,68vw); margin:22px auto 18px; }
@@ -140,15 +146,25 @@
       .buy-button { min-width:74px; padding-inline:7px; }
       .offline-note { font-size:10px; }
     }
+    @media (max-width:420px) { .connection { display:none; } }
     @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } .asteroid-button { top:50vh!important; transform:translate(-50%,-50%)!important; animation:none!important; } }
   </style>
 </head>
 <body>
-  <header class="topbar"><div class="wordmark">STAR<span>CLICKER</span></div><div class="connection">OFFLINE BEREIT</div></header>
+  <header class="topbar">
+    <div class="wordmark">STAR<span>CLICKER</span></div>
+    <div class="topbar-tools">
+      <label class="sr-only" id="language-label" for="language-select">Sprache auswählen</label>
+      <select class="language-select" id="language-select" aria-labelledby="language-label">
+        <option value="de">Deutsch</option><option value="en">English</option><option value="es">Español</option><option value="fr">Français</option><option value="it">Italiano</option><option value="pt">Português</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ru">Русский</option><option value="ja">日本語</option>
+      </select>
+      <div class="connection" id="connection-status">OFFLINE BEREIT</div>
+    </div>
+  </header>
   <main>
     <section class="playfield" aria-label="Stern sammeln">
-      <p class="eyebrow">Dein kleines Universum · IM SCHULISCHEN W-LAN · <span style="text-transform:none">Scripted by Raturs7110</span></p><h1>Sterne sammeln</h1>
-      <p class="count" id="stars" aria-live="polite">0</p><p class="count-label">gesammelte Sterne</p>
+      <p class="eyebrow"><span id="universe-copy">Dein kleines Universum</span> · <span id="wifi-copy">IM SCHULISCHEN W-LAN</span> · <span style="text-transform:none">Scripted by Raturs7110</span></p><h1 id="main-title">Sterne sammeln</h1>
+      <p class="count" id="stars" aria-live="polite">0</p><p class="count-label" id="count-label">gesammelte Sterne</p>
       <button class="star-button" id="star-button" type="button" aria-label="Stern anklicken und Sterne sammeln">
         <svg class="star-art" viewBox="0 0 200 200" role="img" aria-hidden="true">
           <defs><linearGradient id="star-fill" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4b8"/><stop offset=".48" stop-color="#ffd05a"/><stop offset="1" stop-color="#ff806e"/></linearGradient></defs>
@@ -156,8 +172,8 @@
           <path d="m100 34 13 45 47 1-37 28 13 47-36-28-36 28 13-47-37-28 47-1Z" fill="#fff4b8" opacity=".22"/><circle cx="100" cy="102" r="7" fill="#fff8d9"/>
         </svg>
       </button>
-      <p class="click-hint">Tippe den Stern <strong>+<span id="per-click">1</span></strong></p>
-      <div class="stats" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label">Klicks</p></div></div>
+      <p class="click-hint"><span id="click-hint-label">Tippe den Stern</span> <strong>+<span id="per-click">1</span></strong></p>
+      <div class="stats" id="stats-label" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label" id="per-second-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label" id="click-total-label">Klicks</p></div></div>
       <section class="asteroid-event" aria-labelledby="asteroid-event-title">
         <h2 id="asteroid-event-title">Asteroiden-Event</h2>
         <div class="bossbar-row">
@@ -173,20 +189,20 @@
     </section>
     <aside class="shop" aria-labelledby="shop-title" id="shop">
       <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="false" aria-controls="upgrade-list-panel">
-        <strong>Upgrades</strong>
+        <strong id="shop-label">Upgrades</strong>
         <span aria-hidden="true" class="toggle-indicator">›</span>
       </button>
       <form class="secret-code-form" id="secret-code-form">
-        <label for="secret-code-input">Secret Codes</label>
+        <label id="secret-code-label" for="secret-code-input">Secret Codes</label>
         <div class="secret-code-controls">
           <input class="secret-code-input" id="secret-code-input" type="text" maxlength="32" autocomplete="off" placeholder="Code eingeben" required>
-          <button class="secret-code-submit" type="submit">Einlösen</button>
+          <button class="secret-code-submit" id="secret-code-submit" type="submit">Einlösen</button>
         </div>
       </form>
       <div class="shop-panel" id="upgrade-list-panel">
-        <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p>UPGRADES</p></div>
+        <div class="shop-heading"><h2 id="shop-title">Sternen-Shop</h2><p id="shop-kicker">UPGRADES</p></div>
         <div class="upgrade-list" id="upgrade-list"></div>
-        <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> Spielstand wird lokal gespeichert</p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
+        <div class="shop-footer"><p class="offline-note"><span aria-hidden="true">●</span> <span id="local-save-note">Spielstand wird lokal gespeichert</span></p><button class="reset-button" id="reset-button" type="button">Neustart</button></div>
       </div>
     </aside>
   </main>
@@ -199,6 +215,7 @@
     </svg>
   </button>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="translations.js"></script>
   <script>
     const upgrades = [
       { id:'dust', name:'Sternenstaub', description:'+1 Stern pro Klick', icon:'✧', baseCost:5, click:1, passive:0 },
@@ -261,6 +278,41 @@
     const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent() });
     let state = loadState();
     let toastTimer;
+    const languageSelect=document.getElementById('language-select');
+    function loadLanguage() {
+      try {
+        const saved=localStorage.getItem('star-clicker-language');
+        return Object.prototype.hasOwnProperty.call(StarClickerLocales,saved)?saved:'de';
+      } catch { return 'de'; }
+    }
+    let currentLanguage=loadLanguage();
+    function translate(key,values={}) {
+      const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerLocales.de.ui[key]||key;
+      return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
+    }
+    function applyTranslations() {
+      document.documentElement.lang=currentLanguage;
+      languageSelect.value=currentLanguage;
+      const textById={
+        'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel',
+        'click-hint-label':'clickHint','stats-label':'statsAria','per-second-label':'perSecond','click-total-label':'clicks',
+        'asteroid-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
+        'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel'
+      };
+      for (const [id,key] of Object.entries(textById)) document.getElementById(id).textContent=translate(key);
+      document.getElementById('secret-code-input').placeholder=translate('codePlaceholder');
+      document.getElementById('star-button').setAttribute('aria-label',translate('starAria'));
+      document.getElementById('stats-label').setAttribute('aria-label',translate('statsAria'));
+      document.getElementById('asteroid-button').setAttribute('aria-label',translate('asteroidAria',{reward:format(ASTEROID_REWARD)}));
+      document.getElementById('asteroid-button').title=translate('asteroidTitle',{reward:format(ASTEROID_REWARD)});
+    }
+    languageSelect.value=currentLanguage;
+    languageSelect.addEventListener('change',()=>{
+      currentLanguage=Object.prototype.hasOwnProperty.call(StarClickerLocales,languageSelect.value)?languageSelect.value:'de';
+      try { localStorage.setItem('star-clicker-language',currentLanguage); } catch {}
+      applyTranslations();
+      render();
+    });
 
     function loadState() {
       try {
@@ -270,9 +322,9 @@
       } catch { return defaultState(); }
     }
     function saveState() {
-      try { localStorage.setItem('star-clicker-save',JSON.stringify(state)); } catch { showToast('Speichern ist in diesem Browser nicht verfügbar.'); }
+      try { localStorage.setItem('star-clicker-save',JSON.stringify(state)); } catch { showToast(translate('saveUnavailable')); }
     }
-    function format(value) { return new Intl.NumberFormat('de-DE',{notation:'standard',maximumFractionDigits:0}).format(value); }
+    function format(value) { return new Intl.NumberFormat(StarClickerLocales[currentLanguage].locale,{notation:'standard',maximumFractionDigits:0}).format(value); }
     function costFor(item) { return Math.ceil(item.baseCost*Math.pow(1.17,state.owned[item.id])); }
     function starsPerClick() { return 1+upgrades.reduce((total,item)=>total+item.click*state.owned[item.id],0); }
     function starsPerSecond() { return upgrades.reduce((total,item)=>total+item.passive*state.owned[item.id],0); }
@@ -281,9 +333,11 @@
       document.getElementById('per-click').textContent=format(starsPerClick());
       document.getElementById('per-second').textContent=format(starsPerSecond());
       document.getElementById('click-total').textContent=format(state.clicks);
-      document.getElementById('upgrade-list').innerHTML=upgrades.map(item=>{
+      document.getElementById('upgrade-list').innerHTML=upgrades.map((item,index)=>{
         const cost=costFor(item),count=state.owned[item.id];
-        return `<article class="upgrade"><div class="upgrade-icon" aria-hidden="true">${item.icon}</div><div class="upgrade-copy"><h3>${item.name} <span style="color:var(--muted);font:10px var(--mono)">×${count}</span></h3><p>${item.description}</p></div><button class="buy-button" type="button" data-upgrade="${item.id}" ${state.stars<cost?'disabled':''}>${format(cost)} ✦</button></article>`;
+        const name=StarClickerLocales[currentLanguage].upgradeNames[index];
+        const description=item.click?translate('clickReward',{amount:format(item.click)}):translate('passiveReward',{amount:format(item.passive)});
+        return `<article class="upgrade"><div class="upgrade-icon" aria-hidden="true">${item.icon}</div><div class="upgrade-copy"><h3>${name} <span style="color:var(--muted);font:10px var(--mono)">×${count}</span></h3><p>${description}</p></div><button class="buy-button" type="button" data-upgrade="${item.id}" ${state.stars<cost?'disabled':''}>${format(cost)} ✦</button></article>`;
       }).join('');
       renderAsteroidEvent();
     }
@@ -304,16 +358,18 @@
       const active=event.phase==='active';
       const phaseDuration=active?ASTEROID_ROUND_MS:ASTEROID_PAUSE_MS;
       const phaseRemaining=Math.max(0,event.phaseEndsAt-now);
-      document.getElementById('event-phase-label').textContent=active?'Runde endet in':'Nächste Runde in';
-      document.getElementById('event-phase-track').setAttribute('aria-label',active?'Zeit der Asteroidenrunde':'Zeit bis zur nächsten Asteroidenrunde');
+      document.getElementById('event-phase-label').textContent=translate(active?'roundEnds':'nextRound');
+      document.getElementById('event-phase-track').setAttribute('aria-label',translate(active?'roundEnds':'nextRound'));
       updateBossbar('event-phase-track','event-phase-fill','event-phase-time',phaseRemaining,phaseDuration);
       const dropRow=document.getElementById('asteroid-drop-row');
       const hasFutureDrop=active&&event.asteroidsSpawned<MAX_ASTEROIDS_PER_ROUND;
       dropRow.hidden=!hasFutureDrop;
+      document.getElementById('asteroid-drop-row').querySelector('.bossbar-heading span').textContent=translate('nextAsteroid');
+      document.getElementById('asteroid-drop-track').setAttribute('aria-label',translate('nextAsteroid'));
       if (hasFutureDrop) updateBossbar('asteroid-drop-track','asteroid-drop-fill','asteroid-drop-time',Math.max(0,event.nextAsteroidAt-now),ASTEROID_DROP_MS);
       const count=document.getElementById('asteroid-count');
       count.hidden=!active;
-      count.textContent=`Eingesammelt: ${format(event.asteroidsCollected)} / ${format(MAX_ASTEROIDS_PER_ROUND)}`;
+      count.textContent=translate('collected',{collected:format(event.asteroidsCollected),max:format(MAX_ASTEROIDS_PER_ROUND)});
       const asteroidButton=document.getElementById('asteroid-button');
       const showAsteroid=active&&event.asteroidAvailable;
       asteroidButton.hidden=!showAsteroid;
@@ -417,41 +473,41 @@
       event.asteroidAvailable=false;
       event.asteroidsCollected+=1;
       state.stars+=ASTEROID_REWARD;
-      render(); saveState(); showToast(`Asteroid eingesammelt: +${format(ASTEROID_REWARD)} Sterne`);
+      render(); saveState(); showToast(translate('asteroidReward',{amount:format(ASTEROID_REWARD)}));
     });
     document.getElementById('upgrade-list').addEventListener('click',event=>{
       const button=event.target.closest('[data-upgrade]'); if (!button) return;
       const item=upgrades.find(upgrade=>upgrade.id===button.dataset.upgrade),cost=costFor(item);
       if (state.stars<cost) return;
-      state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(`${item.name} freigeschaltet`);
+      state.stars-=cost; state.owned[item.id]+=1; render(); saveState(); showToast(translate('upgradeUnlocked',{name:StarClickerLocales[currentLanguage].upgradeNames[upgrades.indexOf(item)]}));
     });
     document.getElementById('secret-code-form').addEventListener('submit',event=>{
       event.preventDefault();
       const input=document.getElementById('secret-code-input');
       const code=input.value.trim().toUpperCase();
       const reward=secretCodeRewards.get(code);
-      if (!reward) { showToast('Dieser Secret Code ist ungültig.'); return; }
-      if (state.redeemedCodes.includes(code)) { showToast('Dieser Code wurde bereits eingelöst.'); return; }
+      if (!reward) { showToast(translate('invalidCode')); return; }
+      if (state.redeemedCodes.includes(code)) { showToast(translate('usedCode')); return; }
       state.redeemedCodes.push(code);
       let message;
       if (reward.stars) {
         state.stars+=reward.stars;
-        message=`Code eingelöst: +${format(reward.stars)} Sterne`;
+        message=translate('codeStars',{amount:format(reward.stars)});
       } else {
         state.owned[reward.upgradeId]=Math.max(state.owned[reward.upgradeId],reward.level);
-        const item=upgrades.find(upgrade=>upgrade.id===reward.upgradeId);
-        message=`Code eingelöst: ${item.name} auf Level ${state.owned[reward.upgradeId]}`;
+        const itemIndex=upgrades.findIndex(upgrade=>upgrade.id===reward.upgradeId);
+        message=translate('codeLevel',{name:StarClickerLocales[currentLanguage].upgradeNames[itemIndex],level:format(state.owned[reward.upgradeId])});
       }
       render(); saveState(); input.value=''; showToast(message);
     });
     document.getElementById('reset-button').addEventListener('click',()=>{
-      if (!window.confirm('Wirklich von vorne anfangen? Dein Spielstand wird gelöscht.')) return;
+      if (!window.confirm(translate('resetConfirm'))) return;
       const redeemedCodes=state.redeemedCodes;
       updateAsteroidEvent();
       const asteroidEvent=state.asteroidEvent;
-      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; render(); saveState(); showToast('Neues Sternen-Abenteuer gestartet');
+      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; render(); saveState(); showToast(translate('resetStarted'));
     });
-    document.getElementById('asteroid-button').setAttribute('aria-label',`Asteroid anklicken und ${format(ASTEROID_REWARD)} Sterne erhalten`);
+    applyTranslations();
     updateAsteroidEvent();
     render();
     saveState();

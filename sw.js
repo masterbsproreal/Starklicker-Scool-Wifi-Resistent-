@@ -1,5 +1,5 @@
-const CACHE_NAME = 'star-clicker-v16';
-const APP_SHELL = ['./', './index.html', './manifest.json', './star.svg'];
+const CACHE_NAME = 'star-clicker-v17';
+const APP_SHELL = ['./', './index.html', './manifest.json', './star.svg', './translations.js'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
