@@ -514,7 +514,21 @@
         localStorage.setItem('star-clicker-save',JSON.stringify(state));
       } catch { showToast(translate('saveUnavailable')); }
     }
-    function format(value) { return new Intl.NumberFormat(StarClickerLocales[currentLanguage].locale,{notation:'standard',maximumFractionDigits:0}).format(value); }
+    function format(value) {
+      const locale=StarClickerLocales[currentLanguage].locale;
+      const full=new Intl.NumberFormat(locale,{notation:'standard',maximumFractionDigits:0}).format(value);
+      const units=[
+        {value:1e63,suffix:'Vg'},{value:1e60,suffix:'Nd'},{value:1e57,suffix:'Od'},{value:1e54,suffix:'Spd'},
+        {value:1e51,suffix:'Sxd'},{value:1e48,suffix:'Qid'},{value:1e45,suffix:'Qad'},{value:1e42,suffix:'Td'},
+        {value:1e39,suffix:'Dd'},{value:1e36,suffix:'Ud'},{value:1e33,suffix:'Dc'},{value:1e30,suffix:'No'},
+        {value:1e27,suffix:'Oc'},{value:1e24,suffix:'Sp'},{value:1e21,suffix:'Sx'},{value:1e18,suffix:'Qi'},
+        {value:1e15,suffix:'Qa'},{value:1e12,suffix:'T'},{value:1e9,suffix:'B'},{value:1e6,suffix:'M'},{value:1e3,suffix:'K'}
+      ];
+      const unit=units.find(item=>Math.abs(value)>=item.value);
+      if (!unit) return full;
+      const compact=new Intl.NumberFormat(locale,{maximumFractionDigits:2}).format(value/unit.value);
+      return `${full} (${compact}${unit.suffix})`;
+    }
     function costFor(item) { return Math.ceil(item.baseCost*Math.pow(1.17,state.owned[item.id])); }
     function starsPerClick() { return 1+upgrades.reduce((total,item)=>total+item.click*state.owned[item.id],0); }
     function starsPerSecond() { return upgrades.reduce((total,item)=>total+item.passive*state.owned[item.id],0); }
