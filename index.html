@@ -85,6 +85,23 @@
     .achievement-panel summary::after { display:grid; width:24px; height:24px; place-items:center; border:1px solid #ffffff24; border-radius:50%; color:var(--gold); content:'+'; font:16px var(--mono); }
     .achievement-panel[open] summary::after { content:'−'; }
     .achievement-list { display:grid; }
+    .leaderboard-panel { width:min(100%,440px); margin:18px auto 0; text-align:left; }
+    .leaderboard-panel summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid #ffffff17; cursor:pointer; font-size:14px; font-weight:700; list-style:none; }
+    .leaderboard-panel summary::-webkit-details-marker { display:none; }
+    .leaderboard-panel summary::after { display:grid; width:24px; height:24px; place-items:center; border:1px solid #ffffff24; border-radius:50%; color:var(--gold); content:'+'; font:16px var(--mono); }
+    .leaderboard-panel[open] summary::after { content:'−'; }
+    .leaderboard-hint { margin:0 0 12px; color:var(--muted); font-size:11px; line-height:1.4; }
+    .leaderboard-form label { display:block; margin-bottom:7px; font-size:12px; font-weight:600; }
+    .leaderboard-form-controls { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; }
+    .leaderboard-nickname { width:100%; min-width:0; min-height:42px; padding:9px 11px; border:1px solid #ffffff24; border-radius:5px; color:var(--paper); background:#101319aa; font:13px var(--sans); }
+    .leaderboard-nickname:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
+    .leaderboard-submit:disabled { border-color:#ffffff18; color:#89919b; background:transparent; cursor:not-allowed; }
+    .leaderboard-status { min-height:1.4em; margin:10px 0 0; color:var(--muted); font-size:11px; line-height:1.4; }
+    .leaderboard-list { display:grid; gap:0; margin:8px 0 0; padding:0; list-style:none; }
+    .leaderboard-entry { display:grid; grid-template-columns:32px minmax(0,1fr) auto; align-items:center; gap:9px; padding:9px 0; border-top:1px solid #ffffff12; font-size:12px; }
+    .leaderboard-entry-rank { color:var(--gold); font:12px var(--mono); }
+    .leaderboard-entry-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .leaderboard-entry-score { color:var(--mint); font:11px var(--mono); white-space:nowrap; }
     .achievement-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:10px; padding:11px 0; border-top:1px solid #ffffff12; }
     .achievement-copy { min-width:0; }
     .achievement-copy h3 { margin:0; font-size:13px; }
@@ -248,6 +265,19 @@
         <summary id="achievements-title">Erfolge</summary>
         <div class="achievement-list" id="achievement-list"></div>
       </details>
+      <details class="leaderboard-panel" id="leaderboard-panel">
+        <summary id="leaderboard-title">Bestenliste</summary>
+        <p class="leaderboard-hint" id="leaderboard-hint">Nur dein Spitzname und Punktestand sind öffentlich sichtbar. Nutze keinen echten Namen.</p>
+        <form class="leaderboard-form" id="leaderboard-form">
+          <label id="leaderboard-name-label" for="leaderboard-nickname">Spitzname</label>
+          <div class="leaderboard-form-controls">
+            <input class="leaderboard-nickname" id="leaderboard-nickname" type="text" maxlength="16" autocomplete="nickname" required>
+            <button class="secret-code-submit leaderboard-submit" id="leaderboard-submit" type="submit">Eintragen</button>
+          </div>
+        </form>
+        <p class="leaderboard-status" id="leaderboard-status" role="status" aria-live="polite"></p>
+        <ol class="leaderboard-list" id="leaderboard-list"></ol>
+      </details>
       <section class="rebirth-panel" aria-labelledby="rebirth-title">
         <h2 id="rebirth-title">Rebirth</h2>
         <p class="rebirth-status" id="rebirth-status"></p>
@@ -282,6 +312,7 @@
     </svg>
   </button>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="leaderboard-config.js"></script>
   <script src="translations.js"></script>
   <script>
     const upgrades = [
@@ -397,6 +428,10 @@
       } catch { return 'de'; }
     }
     let currentLanguage=loadLanguage();
+    const leaderboardConfig=globalThis.StarClickerLeaderboardConfig||{};
+    let leaderboardStatusKey='leaderboardNotConfigured';
+    let leaderboardStatusValues={};
+    let leaderboardSubmitting=false;
     function loadAudioPreference() {
       try { return localStorage.getItem('star-clicker-audio-enabled')!=='false'; } catch { return true; }
     }
@@ -418,8 +453,79 @@
     const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',progressX4:'Fortschritt bis ×4: {current} / {target} Klicks',notUnlocked:'Nicht freigeschaltet',buttonLocked:'Du hast dies nicht freigeschaltet',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde',autoClickerUnlockName:'Autoklicker freischalten',autoClickerUnlockDesc:'Bei {target} Klicks wird x2 freigeschaltet.',autoClickerUpgradeName:'Autoklicker auf x4 verbessern',autoClickerUpgradeDesc:'Erreiche {target} Klicks für x4.',autoClickerMaxName:'Autoklicker x4 freigeschaltet',autoClickerMaxDesc:'Die höchste Geschwindigkeit ist erreicht.',autoClickerStageLocked:'Nicht freigeschaltet',autoClickerStageX2:'x2 freigeschaltet',autoClickerStageX4:'x4 freigeschaltet'};
     const rebirthFallbacks={name:'Rebirth',button:'Rebirth ×2',status:'Rebirths: {count} · Klickbonus ×{multiplier}. Level 100: {upgrades}/{total} Upgrades · Sterne: {stars}/{target}',ready:'Alle Voraussetzungen erfüllt! Der Rebirth verdoppelt deinen Klickbonus dauerhaft.',confirm:'Rebirth durchführen? Sterne und Upgrade-Level werden zurückgesetzt; dein Klickbonus wird dauerhaft verdoppelt.',done:'Rebirth abgeschlossen! Klickbonus jetzt ×{multiplier}.'};
     function translate(key,values={}) {
-      const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||globalThis.StarClickerRebirthLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||globalThis.StarClickerRebirthLocales?.de?.[key]||autoclickerFallbacks[key]||rebirthFallbacks[key]||key;
+      const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||globalThis.StarClickerRebirthLocales?.[currentLanguage]?.[key]||globalThis.StarClickerLeaderboardLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||globalThis.StarClickerRebirthLocales?.de?.[key]||globalThis.StarClickerLeaderboardLocales?.de?.[key]||autoclickerFallbacks[key]||rebirthFallbacks[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
+    }
+    function setLeaderboardStatus(key,values={}) {
+      leaderboardStatusKey=key;
+      leaderboardStatusValues=values;
+      const status=document.getElementById('leaderboard-status');
+      if (status) status.textContent=translate(key,values);
+    }
+    function leaderboardSettings() {
+      const url=typeof leaderboardConfig.supabaseUrl==='string'?leaderboardConfig.supabaseUrl.trim().replace(/\/+$/,''):'';
+      const anonKey=typeof leaderboardConfig.supabaseAnonKey==='string'?leaderboardConfig.supabaseAnonKey.trim():'';
+      return url.startsWith('https://')&&anonKey?{url,anonKey}:null;
+    }
+    function renderLeaderboardRows(entries) {
+      const list=document.getElementById('leaderboard-list');
+      list.replaceChildren();
+      entries.slice(0,10).forEach((entry,index)=>{
+        if (typeof entry.nickname!=='string'||!Number.isFinite(Number(entry.score))) return;
+        const row=document.createElement('li'); row.className='leaderboard-entry';
+        const rank=document.createElement('span'); rank.className='leaderboard-entry-rank'; rank.textContent=`${index+1}.`;
+        const nickname=document.createElement('span'); nickname.className='leaderboard-entry-name'; nickname.textContent=entry.nickname;
+        const score=document.createElement('span'); score.className='leaderboard-entry-score'; score.textContent=`${format(Number(entry.score))} ✦`;
+        row.append(rank,nickname,score); list.append(row);
+      });
+    }
+    async function loadLeaderboard() {
+      const settings=leaderboardSettings();
+      const submit=document.getElementById('leaderboard-submit');
+      if (!settings) {
+        submit.disabled=true;
+        setLeaderboardStatus('leaderboardNotConfigured');
+        return;
+      }
+      submit.disabled=leaderboardSubmitting;
+      setLeaderboardStatus('leaderboardLoading');
+      try {
+        const query=new URLSearchParams({select:'nickname,score',order:'score.desc,created_at.asc',limit:'10'});
+        const response=await fetch(`${settings.url}/rest/v1/leaderboard?${query}`,{headers:{apikey:settings.anonKey,Authorization:`Bearer ${settings.anonKey}`}});
+        if (!response.ok) throw new Error(`Leaderboard request failed (${response.status})`);
+        const entries=await response.json();
+        if (!Array.isArray(entries)) throw new Error('Invalid leaderboard response');
+        renderLeaderboardRows(entries);
+        setLeaderboardStatus(entries.length?'leaderboardLoaded':'leaderboardEmpty');
+      } catch {
+        setLeaderboardStatus('leaderboardLoadError');
+      } finally {
+        submit.disabled=leaderboardSubmitting;
+      }
+    }
+    async function submitLeaderboardEntry(event) {
+      event.preventDefault();
+      const settings=leaderboardSettings();
+      if (!settings) { setLeaderboardStatus('leaderboardNotConfigured'); return; }
+      const input=document.getElementById('leaderboard-nickname');
+      const nickname=Array.from(input.value.normalize('NFKC').replace(/[\u0000-\u001f\u007f]/g,'').trim()).slice(0,16).join('');
+      if (!nickname) { setLeaderboardStatus('leaderboardInvalidName'); input.focus(); return; }
+      leaderboardSubmitting=true;
+      document.getElementById('leaderboard-submit').disabled=true;
+      setLeaderboardStatus('leaderboardSubmitting');
+      try {
+        const response=await fetch(`${settings.url}/rest/v1/leaderboard`,{method:'POST',headers:{apikey:settings.anonKey,Authorization:`Bearer ${settings.anonKey}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({nickname,score:Math.floor(state.stars)})});
+        if (!response.ok) throw new Error(`Leaderboard submit failed (${response.status})`);
+        try { localStorage.setItem('star-clicker-leaderboard-nickname',nickname); } catch {}
+        input.value=nickname;
+        await loadLeaderboard();
+        setLeaderboardStatus('leaderboardSubmitSuccess',{name:nickname});
+      } catch {
+        setLeaderboardStatus('leaderboardSubmitError');
+      } finally {
+        leaderboardSubmitting=false;
+        document.getElementById('leaderboard-submit').disabled=false;
+      }
     }
     function updateAudioToggle() {
       const label=StarClickerAudioLocales[currentLanguage][audioEnabled?'off':'on'];
@@ -517,13 +623,17 @@
       document.documentElement.lang=currentLanguage;
       languageSelect.value=currentLanguage;
       const textById={
-        'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel',
+        'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel','leaderboard-title':'leaderboardTitle','leaderboard-name-label':'leaderboardNicknameLabel',
         'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks','autoclicker-title':'name','rebirth-title':'rebirthName',
         'asteroid-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
         'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel','achievements-title':'achievementsTitle'
       };
       for (const [id,key] of Object.entries(textById)) document.getElementById(id).textContent=translate(key);
       document.getElementById('secret-code-input').placeholder=translate('codePlaceholder');
+      document.getElementById('leaderboard-hint').textContent=translate('leaderboardHint');
+      document.getElementById('leaderboard-submit').textContent=translate('leaderboardSubmit');
+      document.getElementById('leaderboard-nickname').placeholder=translate('leaderboardNicknamePlaceholder');
+      setLeaderboardStatus(leaderboardStatusKey,leaderboardStatusValues);
       document.getElementById('star-button').setAttribute('aria-label',translate('starAria'));
       document.getElementById('stats-label').setAttribute('aria-label',translate('statsAria'));
       document.getElementById('asteroid-button').setAttribute('aria-label',translate('asteroidAria',{reward:format(ASTEROID_REWARD)}));
@@ -540,6 +650,8 @@
     document.getElementById('audio-toggle').addEventListener('click',()=>setAudioEnabled(!audioEnabled));
     document.getElementById('audio-volume').addEventListener('input',event=>setAudioVolume(event.currentTarget.value));
     window.addEventListener('resize',renderStarCount);
+    document.getElementById('leaderboard-form').addEventListener('submit',submitLeaderboardEntry);
+    try { document.getElementById('leaderboard-nickname').value=localStorage.getItem('star-clicker-leaderboard-nickname')||''; } catch {}
 
     function loadState() {
       try {
@@ -871,6 +983,7 @@
     updateAsteroidEvent();
     render();
     saveState();
+    loadLeaderboard();
     window.setInterval(()=>{
       const eventChanged=updateAsteroidEvent();
       const income=starsPerSecond();
