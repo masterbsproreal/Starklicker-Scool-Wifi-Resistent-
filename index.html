@@ -84,6 +84,7 @@
     .achievement-progress-track { height:6px; overflow:hidden; border-radius:999px; background:#ffffff12; }
     .achievement-progress-fill { display:block; height:100%; border-radius:inherit; background:var(--mint); }
     .achievement-progress-label { display:block; margin-top:5px; color:var(--muted); font:10px var(--mono); }
+    .achievement-state { max-width:132px; color:var(--mint); font-size:10px; line-height:1.3; text-align:right; }
     .achievement-claim { min-width:92px; max-width:128px; padding:8px 10px; border:1px solid #ffd05a66; border-radius:5px; color:var(--gold); background:#ffd05a0c; cursor:pointer; font-size:11px; font-weight:600; }
     .achievement-claim:disabled { border-color:#ffffff18; color:#89919b; background:transparent; cursor:default; }
     .achievement-claim:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
@@ -399,7 +400,7 @@
     let audioMusicGain=null;
     let musicTimer=0;
     let musicNoteIndex=0;
-    const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',progressX4:'Fortschritt bis ×4: {current} / {target} Klicks',notUnlocked:'Nicht freigeschaltet',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde'};
+    const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',progressX4:'Fortschritt bis ×4: {current} / {target} Klicks',notUnlocked:'Nicht freigeschaltet',buttonLocked:'Du hast dies nicht freigeschaltet',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde',autoClickerUnlockName:'Autoklicker freischalten',autoClickerUnlockDesc:'Bei {target} Klicks wird x2 freigeschaltet.',autoClickerUpgradeName:'Autoklicker auf x4 verbessern',autoClickerUpgradeDesc:'Erreiche {target} Klicks für x4.',autoClickerMaxName:'Autoklicker x4 freigeschaltet',autoClickerMaxDesc:'Die höchste Geschwindigkeit ist erreicht.',autoClickerStageLocked:'Nicht freigeschaltet',autoClickerStageX2:'x2 freigeschaltet',autoClickerStageX4:'x4 freigeschaltet'};
     function translate(key,values={}) {
       const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||autoclickerFallbacks[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
@@ -603,13 +604,13 @@
           :translate(enabled?'on':'off',{speed:format(speed)});
       const button=document.getElementById('autoclicker-toggle');
       button.disabled=!unlocked;
-      button.textContent=unlocked?translate('button',{speed:format(speed)}):translate('notUnlocked');
+      button.textContent=unlocked?translate('button',{speed:format(speed)}):translate('buttonLocked');
       button.setAttribute('aria-label',translate('aria',{status:unlocked?translate(enabled?'on':'off',{speed:format(speed)}):status,speed:format(speed||2)}));
       button.setAttribute('aria-pressed',String(enabled));
       document.getElementById('autoclicker-status').textContent=status;
     }
     function renderAchievements() {
-      document.getElementById('achievement-list').innerHTML=achievements.map(achievement=>{
+      const regularRows=achievements.map(achievement=>{
         const progress=Math.min(achievement.target,state.achievementStats[achievement.stat]);
         const claimed=state.achievementStats.claimed.includes(achievement.id);
         const completed=progress>=achievement.target;
@@ -617,6 +618,16 @@
         const buttonText=claimed?translate('achievementClaimed'):translate('achievementClaim',{reward:format(achievement.reward)});
         return `<article class="achievement-row"><div class="achievement-copy"><h3>${name}</h3><p>${translate(achievement.descriptionKey)}</p><div class="achievement-progress-track" role="progressbar" aria-label="${name}" aria-valuemin="0" aria-valuemax="${achievement.target}" aria-valuenow="${progress}"><span class="achievement-progress-fill" style="width:${progress/achievement.target*100}%"></span></div><span class="achievement-progress-label">${translate('achievementProgress',{current:format(progress),target:format(achievement.target)})}</span></div><button class="achievement-claim" type="button" data-achievement="${achievement.id}" ${!completed||claimed?'disabled':''}>${buttonText}</button></article>`;
       }).join('');
+      const clickCount=state.achievementStats.clicks;
+      const maxUnlocked=clickCount>=AUTOCLICKER_UNLOCK_X4;
+      const firstUnlocked=clickCount>=AUTOCLICKER_UNLOCK_X2;
+      const target=firstUnlocked?AUTOCLICKER_UNLOCK_X4:AUTOCLICKER_UNLOCK_X2;
+      const progress=Math.min(clickCount,target);
+      const name=translate(maxUnlocked?'autoClickerMaxName':firstUnlocked?'autoClickerUpgradeName':'autoClickerUnlockName');
+      const description=translate(maxUnlocked?'autoClickerMaxDesc':firstUnlocked?'autoClickerUpgradeDesc':'autoClickerUnlockDesc',{target:format(target)});
+      const stage=translate(maxUnlocked?'autoClickerStageX4':firstUnlocked?'autoClickerStageX2':'autoClickerStageLocked');
+      const autoclickerRow=`<article class="achievement-row"><div class="achievement-copy"><h3>${name}</h3><p>${description}</p><div class="achievement-progress-track" role="progressbar" aria-label="${name}" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${progress}"><span class="achievement-progress-fill" style="width:${progress/target*100}%"></span></div><span class="achievement-progress-label">${translate('achievementProgress',{current:format(progress),target:format(target)})}</span></div><span class="achievement-state">${stage}</span></article>`;
+      document.getElementById('achievement-list').innerHTML=regularRows+autoclickerRow;
     }
     function formatDuration(milliseconds) {
       const totalSeconds=Math.ceil(Math.max(0,milliseconds)/1000);
