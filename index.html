@@ -54,7 +54,9 @@
     .click-hint { margin:0; color:var(--muted); font-size:13px; } .click-hint strong { color:var(--gold); font-weight:600; }
     .stats { display:flex; justify-content:center; gap:32px; margin:30px 0 0; }
     .stat { min-width:90px; } .stat-value { margin:0; font:15px var(--mono); font-variant-numeric:tabular-nums; } .stat-label { margin:5px 0 0; color:var(--muted); font-size:11px; }
-    .autoclicker-control { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px 12px; min-height:42px; margin:16px auto 0; }
+    .autoclicker-panel { margin:18px auto 0; }
+    .autoclicker-heading { margin:0 0 8px; font-size:14px; }
+    .autoclicker-control { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px 12px; min-height:42px; margin:0 auto; }
     .autoclicker-toggle { min-height:38px; padding:8px 13px; border:1px solid #8ee0bd70; border-radius:6px; color:var(--mint); background:#8ee0bd0d; cursor:pointer; font-size:13px; font-weight:700; }
     .autoclicker-toggle[aria-pressed="true"] { color:var(--ink); background:var(--mint); }
     .autoclicker-toggle:disabled { border-color:#ffffff20; color:#89919b; background:#ffffff05; cursor:not-allowed; }
@@ -214,9 +216,12 @@
       </button>
       <p class="click-hint"><span id="click-hint-label">Tippe den Stern</span> <strong>+<span id="per-click">1</span></strong></p>
       <div class="stats" id="stats-label" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label" id="per-second-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label" id="click-total-label">Klicks</p></div></div>
-      <div class="autoclicker-control">
-        <button class="autoclicker-toggle" id="autoclicker-toggle" type="button" aria-pressed="false" disabled>Autoklicker ×2</button>
-        <p class="autoclicker-status" id="autoclicker-status">Freischaltung bei 0 / 50.000 Klicks</p>
+      <div class="autoclicker-panel">
+        <h2 class="autoclicker-heading" id="autoclicker-title">Autoklicker</h2>
+        <div class="autoclicker-control">
+          <button class="autoclicker-toggle" id="autoclicker-toggle" type="button" aria-pressed="false" disabled>Nicht freigeschaltet</button>
+          <p class="autoclicker-status" id="autoclicker-status">Freischaltung bei 0 / 50.000 Klicks</p>
+        </div>
       </div>
       <section class="asteroid-event" aria-labelledby="asteroid-event-title">
         <h2 id="asteroid-event-title">Asteroiden-Event</h2>
@@ -394,7 +399,7 @@
     let audioMusicGain=null;
     let musicTimer=0;
     let musicNoteIndex=0;
-    const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde'};
+    const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',progressX4:'Fortschritt bis ×4: {current} / {target} Klicks',notUnlocked:'Nicht freigeschaltet',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde'};
     function translate(key,values={}) {
       const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||autoclickerFallbacks[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
@@ -496,7 +501,7 @@
       languageSelect.value=currentLanguage;
       const textById={
         'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel',
-        'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks',
+        'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks','autoclicker-title':'name',
         'asteroid-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
         'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel','achievements-title':'achievementsTitle'
       };
@@ -590,10 +595,15 @@
       const speed=autoclickerSpeed();
       const unlocked=speed>0;
       const enabled=unlocked&&state.autoClickerEnabled;
-      const status=translate(unlocked?(enabled?'on':'off'):'locked',unlocked?{speed:format(speed)}:{current:format(state.achievementStats.clicks),target:format(AUTOCLICKER_UNLOCK_X2)});
+      const clickCount=state.achievementStats.clicks;
+      const status=speed===0
+        ?translate('locked',{current:format(clickCount),target:format(AUTOCLICKER_UNLOCK_X2)})
+        :speed===2
+          ?translate('progressX4',{current:format(clickCount),target:format(AUTOCLICKER_UNLOCK_X4)})
+          :translate(enabled?'on':'off',{speed:format(speed)});
       const button=document.getElementById('autoclicker-toggle');
       button.disabled=!unlocked;
-      button.textContent=translate('button',{speed:format(speed||2)});
+      button.textContent=unlocked?translate('button',{speed:format(speed)}):translate('notUnlocked');
       button.setAttribute('aria-label',translate('aria',{status:unlocked?translate(enabled?'on':'off',{speed:format(speed)}):status,speed:format(speed||2)}));
       button.setAttribute('aria-pressed',String(enabled));
       document.getElementById('autoclicker-status').textContent=status;
