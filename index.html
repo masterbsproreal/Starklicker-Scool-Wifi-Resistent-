@@ -394,8 +394,9 @@
     let audioMusicGain=null;
     let musicTimer=0;
     let musicNoteIndex=0;
+    const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde'};
     function translate(key,values={}) {
-      const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerAchievementLocales[currentLanguage]?.[key]||StarClickerAutoclickerLocales[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||StarClickerAchievementLocales.de[key]||StarClickerAutoclickerLocales.de[key]||key;
+      const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||autoclickerFallbacks[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
     }
     function updateAudioToggle() {
