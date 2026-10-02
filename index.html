@@ -62,6 +62,13 @@
     .autoclicker-toggle:disabled { border-color:#ffffff20; color:#89919b; background:#ffffff05; cursor:not-allowed; }
     .autoclicker-toggle:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
     .autoclicker-status { margin:0; color:var(--muted); font:11px var(--mono); }
+    .rebirth-panel { width:min(100%,440px); margin:18px auto 0; padding:14px; border:1px solid #ffd05a38; border-radius:8px; background:#191e2666; text-align:left; }
+    .rebirth-panel h2 { margin:0 0 7px; font-size:15px; }
+    .rebirth-status { margin:0 0 11px; color:var(--muted); font-size:11px; line-height:1.45; }
+    .rebirth-button { width:100%; min-height:42px; padding:9px 12px; border:1px solid #ffd05a70; border-radius:5px; color:var(--gold); background:#ffd05a0d; cursor:pointer; font-size:13px; font-weight:700; }
+    .rebirth-button:hover:not(:disabled) { color:var(--ink); background:var(--gold); }
+    .rebirth-button:disabled { border-color:#ffffff1c; color:#89919b; background:#ffffff05; cursor:not-allowed; }
+    .rebirth-button:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
     .asteroid-event { width:min(100%,440px); margin:30px auto 0; text-align:left; }
     .asteroid-event h2 { margin:0 0 16px; font-size:16px; }
     .bossbar-row { margin-top:14px; }
@@ -240,6 +247,11 @@
         <summary id="achievements-title">Erfolge</summary>
         <div class="achievement-list" id="achievement-list"></div>
       </details>
+      <section class="rebirth-panel" aria-labelledby="rebirth-title">
+        <h2 id="rebirth-title">Rebirth</h2>
+        <p class="rebirth-status" id="rebirth-status"></p>
+        <button class="rebirth-button" id="rebirth-button" type="button" disabled>Rebirth ×2</button>
+      </section>
     </section>
     <aside class="shop" aria-labelledby="shop-title" id="shop">
       <button class="shop-toggle" type="button" id="shop-toggle" aria-expanded="false" aria-controls="upgrade-list-panel">
@@ -322,6 +334,7 @@
     const MAX_ASTEROIDS_PER_ROUND=10;
     const AUTOCLICKER_UNLOCK_X2=50000;
     const AUTOCLICKER_UNLOCK_X4=150000;
+    const REBIRTH_STARS_REQUIRED=10000000000000000;
     const achievements=[
       { id:'clicks-100', stat:'clicks', target:100, reward:5000, nameKey:'achievementClicksName', descriptionKey:'achievementClicksDesc' },
       { id:'asteroids-10', stat:'asteroids', target:10, reward:500000, nameKey:'achievementAsteroidsName', descriptionKey:'achievementAsteroidsDesc' },
@@ -346,7 +359,7 @@
         asteroidAvailable:phase==='active'&&event.asteroidAvailable===true&&now<(Number.isFinite(event.asteroidFallEndsAt)?event.asteroidFallEndsAt:now+ASTEROID_FALL_MS)
       };
     }
-    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent(), achievementStats:{ clicks:0, asteroids:0, upgradeLevels:0, claimed:[] }, autoClickerEnabled:false });
+    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent(), achievementStats:{ clicks:0, asteroids:0, upgradeLevels:0, claimed:[] }, autoClickerEnabled:false, rebirths:0 });
     function parseSavedState(raw) {
       if (!raw) return null;
       try {
@@ -368,7 +381,8 @@
             upgradeLevels:Math.max(0,Number(savedAchievements.upgradeLevels??ownedLevelCount)||0),
             claimed:Array.isArray(savedAchievements.claimed)?savedAchievements.claimed.filter(id=>typeof id==='string'):[]
           },
-          autoClickerEnabled:stored.autoClickerEnabled===true
+          autoClickerEnabled:stored.autoClickerEnabled===true,
+          rebirths:Math.max(0,Math.floor(Number(stored.rebirths)||0))
         };
       } catch { return null; }
     }
@@ -401,8 +415,9 @@
     let musicTimer=0;
     let musicNoteIndex=0;
     const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',progressX4:'Fortschritt bis ×4: {current} / {target} Klicks',notUnlocked:'Nicht freigeschaltet',buttonLocked:'Du hast dies nicht freigeschaltet',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde',autoClickerUnlockName:'Autoklicker freischalten',autoClickerUnlockDesc:'Bei {target} Klicks wird x2 freigeschaltet.',autoClickerUpgradeName:'Autoklicker auf x4 verbessern',autoClickerUpgradeDesc:'Erreiche {target} Klicks für x4.',autoClickerMaxName:'Autoklicker x4 freigeschaltet',autoClickerMaxDesc:'Die höchste Geschwindigkeit ist erreicht.',autoClickerStageLocked:'Nicht freigeschaltet',autoClickerStageX2:'x2 freigeschaltet',autoClickerStageX4:'x4 freigeschaltet'};
+    const rebirthFallbacks={name:'Rebirth',button:'Rebirth ×2',status:'Rebirths: {count} · Klickbonus ×{multiplier}. Level 100: {upgrades}/{total} Upgrades · Sterne: {stars}/{target}',ready:'Alle Voraussetzungen erfüllt! Der Rebirth verdoppelt deinen Klickbonus dauerhaft.',confirm:'Rebirth durchführen? Sterne und Upgrade-Level werden zurückgesetzt; dein Klickbonus wird dauerhaft verdoppelt.',done:'Rebirth abgeschlossen! Klickbonus jetzt ×{multiplier}.'};
     function translate(key,values={}) {
-      const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||autoclickerFallbacks[key]||key;
+      const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||globalThis.StarClickerRebirthLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||globalThis.StarClickerRebirthLocales?.de?.[key]||autoclickerFallbacks[key]||rebirthFallbacks[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
     }
     function updateAudioToggle() {
@@ -502,7 +517,7 @@
       languageSelect.value=currentLanguage;
       const textById={
         'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel',
-        'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks','autoclicker-title':'name',
+        'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks','autoclicker-title':'name','rebirth-title':'rebirthName',
         'asteroid-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
         'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel','achievements-title':'achievementsTitle'
       };
@@ -570,7 +585,7 @@
       value.style.fontSize=`${Math.max(10,Math.min(38,calculatedSize))}px`;
     }
     function costFor(item) { return Math.ceil(item.baseCost*Math.pow(1.17,state.owned[item.id])); }
-    function starsPerClick() { return 1+upgrades.reduce((total,item)=>total+item.click*state.owned[item.id],0); }
+    function starsPerClick() { return (1+upgrades.reduce((total,item)=>total+item.click*state.owned[item.id],0))*Math.pow(2,state.rebirths); }
     function starsPerSecond() { return upgrades.reduce((total,item)=>total+item.passive*state.owned[item.id],0); }
     function render() {
       renderStarCount();
@@ -586,6 +601,22 @@
       renderAsteroidEvent();
       renderAchievements();
       renderAutoclicker();
+      renderRebirth();
+    }
+    function rebirthRequirements() {
+      const upgradesAtLevel100=upgrades.filter(item=>state.owned[item.id]>=100).length;
+      return { ready:upgradesAtLevel100===upgrades.length&&state.stars>=REBIRTH_STARS_REQUIRED, upgradesAtLevel100 };
+    }
+    function renderRebirth() {
+      const {ready,upgradesAtLevel100}=rebirthRequirements();
+      const multiplier=Math.pow(2,state.rebirths);
+      const status=document.getElementById('rebirth-status');
+      status.textContent=ready
+        ?translate('rebirthReady')
+        :translate('rebirthStatus',{count:format(state.rebirths),multiplier:format(multiplier),upgrades:format(upgradesAtLevel100),total:format(upgrades.length),stars:format(state.stars),target:format(REBIRTH_STARS_REQUIRED)});
+      const button=document.getElementById('rebirth-button');
+      button.disabled=!ready;
+      button.textContent=translate('rebirthButton');
     }
     function autoclickerSpeed(clickCount=state.achievementStats.clicks) {
       if (clickCount>=AUTOCLICKER_UNLOCK_X4) return 4;
@@ -813,9 +844,27 @@
       const redeemedCodes=state.redeemedCodes;
       const achievementStats=state.achievementStats;
       const autoClickerEnabled=state.autoClickerEnabled;
+      const rebirths=state.rebirths;
       updateAsteroidEvent();
       const asteroidEvent=state.asteroidEvent;
-      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; state.achievementStats=achievementStats; state.autoClickerEnabled=autoClickerEnabled; render(); saveState(); showToast(translate('resetStarted'));
+      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; state.achievementStats=achievementStats; state.autoClickerEnabled=autoClickerEnabled; state.rebirths=rebirths; render(); saveState(); showToast(translate('resetStarted'));
+    });
+    document.getElementById('rebirth-button').addEventListener('click',()=>{
+      if (!rebirthRequirements().ready) return;
+      if (!window.confirm(translate('rebirthConfirm'))) return;
+      const redeemedCodes=state.redeemedCodes;
+      const achievementStats=state.achievementStats;
+      const asteroidEvent=state.asteroidEvent;
+      const autoClickerEnabled=state.autoClickerEnabled;
+      const rebirths=state.rebirths+1;
+      state=defaultState();
+      state.redeemedCodes=redeemedCodes;
+      state.achievementStats=achievementStats;
+      state.asteroidEvent=asteroidEvent;
+      state.autoClickerEnabled=autoClickerEnabled;
+      state.rebirths=rebirths;
+      render(); saveState();
+      showToast(translate('rebirthDone',{multiplier:format(Math.pow(2,rebirths))}));
     });
     applyTranslations();
     updateAsteroidEvent();
