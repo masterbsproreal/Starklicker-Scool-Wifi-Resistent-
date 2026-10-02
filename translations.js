@@ -76,3 +76,16 @@ globalThis.StarClickerAudioLocales = {
   ru:{ on:'Включить звук', off:'Выключить звук', volume:'Громкость музыки и эффектов' },
   ja:{ on:'音をオン', off:'音をオフ', volume:'音楽と効果音の音量' }
 };
+
+globalThis.StarClickerAutoclickerLocales = {
+  de:{ name:'Autoklicker', locked:'Freischaltung bei {current} / {target} Klicks', button:'Autoklicker ×{speed}', on:'Ein · {speed} Klicks/Sek.', off:'Aus · {speed} Klicks/Sek.', aria:'Autoklicker {status} · {speed} Klicks pro Sekunde' },
+  en:{ name:'Auto Clicker', locked:'Unlock at {current} / {target} clicks', button:'Auto Clicker ×{speed}', on:'On · {speed} clicks/sec', off:'Off · {speed} clicks/sec', aria:'Auto Clicker {status} · {speed} clicks per second' },
+  es:{ name:'Clic automático', locked:'Se desbloquea con {current} / {target} clics', button:'Clic automático ×{speed}', on:'Activado · {speed} clics/s', off:'Desactivado · {speed} clics/s', aria:'Clic automático {status} · {speed} clics por segundo' },
+  fr:{ name:'Clic automatique', locked:'Débloqué à {current} / {target} clics', button:'Clic auto ×{speed}', on:'Activé · {speed} clics/s', off:'Désactivé · {speed} clics/s', aria:'Clic automatique {status} · {speed} clics par seconde' },
+  it:{ name:'Clic automatico', locked:'Si sblocca a {current} / {target} clic', button:'Clic automatico ×{speed}', on:'Attivo · {speed} clic/s', off:'Disattivo · {speed} clic/s', aria:'Clic automatico {status} · {speed} clic al secondo' },
+  pt:{ name:'Clique automático', locked:'Desbloqueia com {current} / {target} cliques', button:'Clique automático ×{speed}', on:'Ativado · {speed} cliques/s', off:'Desativado · {speed} cliques/s', aria:'Clique automático {status} · {speed} cliques por segundo' },
+  tr:{ name:'Otomatik tıklayıcı', locked:'{current} / {target} tıklamada açılır', button:'Otomatik tıklayıcı ×{speed}', on:'Açık · {speed} tıklama/sn', off:'Kapalı · {speed} tıklama/sn', aria:'Otomatik tıklayıcı {status} · saniyede {speed} tıklama' },
+  pl:{ name:'Autokliker', locked:'Odblokowanie przy {current} / {target} kliknięć', button:'Autokliker ×{speed}', on:'Wł. · {speed} kliknięć/s', off:'Wył. · {speed} kliknięć/s', aria:'Autokliker {status} · {speed} kliknięć na sekundę' },
+  ru:{ name:'Автокликер', locked:'Откроется при {current} / {target} кликах', button:'Автокликер ×{speed}', on:'Вкл. · {speed} клика/с', off:'Выкл. · {speed} клика/с', aria:'Автокликер: {status} · {speed} клика в секунду' },
+  ja:{ name:'オートクリッカー', locked:'{target}クリックで解放 ({current}/{target})', button:'オートクリッカー ×{speed}', on:'オン · 毎秒{speed}回', off:'オフ · 毎秒{speed}回', aria:'オートクリッカー{status}、毎秒{speed}回' }
+};

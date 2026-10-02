@@ -52,6 +52,12 @@
     .click-hint { margin:0; color:var(--muted); font-size:13px; } .click-hint strong { color:var(--gold); font-weight:600; }
     .stats { display:flex; justify-content:center; gap:32px; margin:30px 0 0; }
     .stat { min-width:90px; } .stat-value { margin:0; font:15px var(--mono); font-variant-numeric:tabular-nums; } .stat-label { margin:5px 0 0; color:var(--muted); font-size:11px; }
+    .autoclicker-control { display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap:8px 12px; min-height:42px; margin:16px auto 0; }
+    .autoclicker-toggle { min-height:38px; padding:8px 13px; border:1px solid #8ee0bd70; border-radius:6px; color:var(--mint); background:#8ee0bd0d; cursor:pointer; font-size:13px; font-weight:700; }
+    .autoclicker-toggle[aria-pressed="true"] { color:var(--ink); background:var(--mint); }
+    .autoclicker-toggle:disabled { border-color:#ffffff20; color:#89919b; background:#ffffff05; cursor:not-allowed; }
+    .autoclicker-toggle:focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
+    .autoclicker-status { margin:0; color:var(--muted); font:11px var(--mono); }
     .asteroid-event { width:min(100%,440px); margin:30px auto 0; text-align:left; }
     .asteroid-event h2 { margin:0 0 16px; font-size:16px; }
     .bossbar-row { margin-top:14px; }
@@ -206,6 +212,10 @@
       </button>
       <p class="click-hint"><span id="click-hint-label">Tippe den Stern</span> <strong>+<span id="per-click">1</span></strong></p>
       <div class="stats" id="stats-label" aria-label="Spielstatistik"><div class="stat"><p class="stat-value" id="per-second">0</p><p class="stat-label" id="per-second-label">pro Sekunde</p></div><div class="stat"><p class="stat-value" id="click-total">0</p><p class="stat-label" id="click-total-label">Klicks</p></div></div>
+      <div class="autoclicker-control">
+        <button class="autoclicker-toggle" id="autoclicker-toggle" type="button" aria-pressed="false" disabled>Autoklicker ×2</button>
+        <p class="autoclicker-status" id="autoclicker-status">Freischaltung bei 0 / 50.000 Klicks</p>
+      </div>
       <section class="asteroid-event" aria-labelledby="asteroid-event-title">
         <h2 id="asteroid-event-title">Asteroiden-Event</h2>
         <div class="bossbar-row">
@@ -302,6 +312,8 @@
     const ASTEROID_FALL_MS=5*1000;
     const ASTEROID_REWARD=3000000;
     const MAX_ASTEROIDS_PER_ROUND=10;
+    const AUTOCLICKER_UNLOCK_X2=50000;
+    const AUTOCLICKER_UNLOCK_X4=150000;
     const achievements=[
       { id:'clicks-100', stat:'clicks', target:100, reward:5000, nameKey:'achievementClicksName', descriptionKey:'achievementClicksDesc' },
       { id:'asteroids-10', stat:'asteroids', target:10, reward:500000, nameKey:'achievementAsteroidsName', descriptionKey:'achievementAsteroidsDesc' },
@@ -326,7 +338,7 @@
         asteroidAvailable:phase==='active'&&event.asteroidAvailable===true&&now<(Number.isFinite(event.asteroidFallEndsAt)?event.asteroidFallEndsAt:now+ASTEROID_FALL_MS)
       };
     }
-    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent(), achievementStats:{ clicks:0, asteroids:0, upgradeLevels:0, claimed:[] } });
+    const defaultState = () => ({ stars:0, clicks:0, owned:Object.fromEntries(upgrades.map(item => [item.id,0])), redeemedCodes:[], asteroidEvent:createAsteroidEvent(), achievementStats:{ clicks:0, asteroids:0, upgradeLevels:0, claimed:[] }, autoClickerEnabled:false });
     function parseSavedState(raw) {
       if (!raw) return null;
       try {
@@ -347,7 +359,8 @@
             asteroids:Math.max(0,Number(savedAchievements.asteroids??stored.asteroidEvent?.asteroidsCollected)||0),
             upgradeLevels:Math.max(0,Number(savedAchievements.upgradeLevels??ownedLevelCount)||0),
             claimed:Array.isArray(savedAchievements.claimed)?savedAchievements.claimed.filter(id=>typeof id==='string'):[]
-          }
+          },
+          autoClickerEnabled:stored.autoClickerEnabled===true
         };
       } catch { return null; }
     }
@@ -380,7 +393,7 @@
     let musicTimer=0;
     let musicNoteIndex=0;
     function translate(key,values={}) {
-      const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerAchievementLocales[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||StarClickerAchievementLocales.de[key]||key;
+      const template=StarClickerLocales[currentLanguage].ui[key]||StarClickerAchievementLocales[currentLanguage]?.[key]||StarClickerAutoclickerLocales[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||StarClickerAchievementLocales.de[key]||StarClickerAutoclickerLocales.de[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
     }
     function updateAudioToggle() {
@@ -545,6 +558,24 @@
       }).join('');
       renderAsteroidEvent();
       renderAchievements();
+      renderAutoclicker();
+    }
+    function autoclickerSpeed(clickCount=state.achievementStats.clicks) {
+      if (clickCount>=AUTOCLICKER_UNLOCK_X4) return 4;
+      if (clickCount>=AUTOCLICKER_UNLOCK_X2) return 2;
+      return 0;
+    }
+    function renderAutoclicker() {
+      const speed=autoclickerSpeed();
+      const unlocked=speed>0;
+      const enabled=unlocked&&state.autoClickerEnabled;
+      const status=translate(unlocked?(enabled?'on':'off'):'locked',unlocked?{speed:format(speed)}:{current:format(state.achievementStats.clicks),target:format(AUTOCLICKER_UNLOCK_X2)});
+      const button=document.getElementById('autoclicker-toggle');
+      button.disabled=!unlocked;
+      button.textContent=translate('button',{speed:format(speed||2)});
+      button.setAttribute('aria-label',translate('aria',{status:unlocked?translate(enabled?'on':'off',{speed:format(speed)}):status,speed:format(speed||2)}));
+      button.setAttribute('aria-pressed',String(enabled));
+      document.getElementById('autoclicker-status').textContent=status;
     }
     function renderAchievements() {
       document.getElementById('achievement-list').innerHTML=achievements.map(achievement=>{
@@ -684,6 +715,11 @@
     syncShopState();
 
     document.getElementById('star-button').addEventListener('click',event=>{ state.stars+=starsPerClick(); state.clicks+=1; state.achievementStats.clicks+=1; flyStarsFrom(event.currentTarget); render(); saveState(); playSound('click'); });
+    document.getElementById('autoclicker-toggle').addEventListener('click',()=>{
+      if (!autoclickerSpeed()) return;
+      state.autoClickerEnabled=!state.autoClickerEnabled;
+      renderAutoclicker(); saveState();
+    });
     document.getElementById('asteroid-button').addEventListener('click',()=>{
       if (updateAsteroidEvent()) { render(); saveState(); return; }
       const event=state.asteroidEvent;
@@ -734,9 +770,10 @@
       if (!window.confirm(translate('resetConfirm'))) return;
       const redeemedCodes=state.redeemedCodes;
       const achievementStats=state.achievementStats;
+      const autoClickerEnabled=state.autoClickerEnabled;
       updateAsteroidEvent();
       const asteroidEvent=state.asteroidEvent;
-      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; state.achievementStats=achievementStats; render(); saveState(); showToast(translate('resetStarted'));
+      state=defaultState(); state.redeemedCodes=redeemedCodes; state.asteroidEvent=asteroidEvent; state.achievementStats=achievementStats; state.autoClickerEnabled=autoClickerEnabled; render(); saveState(); showToast(translate('resetStarted'));
     });
     applyTranslations();
     updateAsteroidEvent();
@@ -749,6 +786,19 @@
       if (income>0) render(); else renderAsteroidEvent();
       if (income>0||eventChanged) saveState();
     },1000);
+    let autoClickAccumulator=0;
+    window.setInterval(()=>{
+      const speed=autoclickerSpeed();
+      if (!state.autoClickerEnabled||!speed) { autoClickAccumulator=0; return; }
+      autoClickAccumulator+=speed/4;
+      const clickCount=Math.floor(autoClickAccumulator);
+      if (!clickCount) return;
+      autoClickAccumulator-=clickCount;
+      state.stars+=starsPerClick()*clickCount;
+      state.clicks+=clickCount;
+      state.achievementStats.clicks+=clickCount;
+      render(); saveState();
+    },250);
     if ('serviceWorker' in navigator && location.protocol!=='file:') window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
   </script>
 </body>
