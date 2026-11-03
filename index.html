@@ -356,7 +356,32 @@
       ['COSMICBOSS',{ stars:1000000000 }],
       ['UNIVERSE',{ stars:2500000000 }],
       ['ULTIMATE',{ stars:5000000000 }],
-      ['ZEROPOINT',{ stars:10000000000 }]
+      ['ZEROPOINT',{ stars:10000000000 }],
+      ['800001',{ stars:20000000000 }],
+      ['800002',{ stars:25000000000 }],
+      ['800003',{ stars:50000000000 }],
+      ['800004',{ stars:75000000000 }],
+      ['800005',{ stars:100000000000 }],
+      ['800006',{ stars:150000000000 }],
+      ['800007',{ stars:200000000000 }],
+      ['800008',{ stars:250000000000 }],
+      ['800009',{ stars:300000000000 }],
+      ['800010',{ stars:400000000000 }],
+      ['800011',{ stars:500000000000 }],
+      ['800012',{ stars:600000000000 }],
+      ['800013',{ stars:700000000000 }],
+      ['800014',{ stars:800000000000 }],
+      ['800015',{ stars:900000000000 }],
+      ['800016',{ stars:1000000000000 }],
+      ['800017',{ stars:2000000000000 }],
+      ['800018',{ stars:5000000000000 }],
+      ['800019',{ stars:10000000000000 }],
+      ['800020',{ stars:25000000000000 }],
+      ['800021',{ stars:50000000000000 }],
+      ['800022',{ stars:100000000000000 }],
+      ['800023',{ stars:250000000000000 }],
+      ['800024',{ stars:500000000000000 }],
+      ['800025',{ stars:1000000000000000 }]
     ]);
     const ASTEROID_ROUND_MS=30*60*1000;
     const ASTEROID_PAUSE_MS=30*60*1000;
@@ -366,7 +391,7 @@
     const MAX_ASTEROIDS_PER_ROUND=10;
     const AUTOCLICKER_UNLOCK_X2=50000;
     const AUTOCLICKER_UNLOCK_X4=150000;
-    const REBIRTH_STARS_REQUIRED=10000000000000000;
+    const REBIRTH_BASE_LEVEL=25;
     const achievements=[
       { id:'clicks-100', stat:'clicks', target:100, reward:5000, nameKey:'achievementClicksName', descriptionKey:'achievementClicksDesc' },
       { id:'asteroids-10', stat:'asteroids', target:10, reward:500000, nameKey:'achievementAsteroidsName', descriptionKey:'achievementAsteroidsDesc' },
@@ -451,7 +476,7 @@
     let musicTimer=0;
     let musicNoteIndex=0;
     const autoclickerFallbacks={name:'Autoklicker',locked:'Freischaltung bei {current} / {target} Klicks',progressX4:'Fortschritt bis ×4: {current} / {target} Klicks',notUnlocked:'Nicht freigeschaltet',buttonLocked:'Du hast dies nicht freigeschaltet',button:'Autoklicker ×{speed}',on:'Ein · {speed} Klicks/Sek.',off:'Aus · {speed} Klicks/Sek.',aria:'Autoklicker {status} · {speed} Klicks pro Sekunde',autoClickerUnlockName:'Autoklicker freischalten',autoClickerUnlockDesc:'Bei {target} Klicks wird x2 freigeschaltet.',autoClickerUpgradeName:'Autoklicker auf x4 verbessern',autoClickerUpgradeDesc:'Erreiche {target} Klicks für x4.',autoClickerMaxName:'Autoklicker x4 freigeschaltet',autoClickerMaxDesc:'Die höchste Geschwindigkeit ist erreicht.',autoClickerStageLocked:'Nicht freigeschaltet',autoClickerStageX2:'x2 freigeschaltet',autoClickerStageX4:'x4 freigeschaltet'};
-    const rebirthFallbacks={name:'Rebirth',button:'Rebirth ×2',status:'Rebirths: {count} · Klickbonus ×{multiplier}. Level 100: {upgrades}/{total} Upgrades · Sterne: {stars}/{target}',ready:'Alle Voraussetzungen erfüllt! Der Rebirth verdoppelt deinen Klickbonus dauerhaft.',confirm:'Rebirth durchführen? Sterne und Upgrade-Level werden zurückgesetzt; dein Klickbonus wird dauerhaft verdoppelt.',done:'Rebirth abgeschlossen! Klickbonus jetzt ×{multiplier}.'};
+    const rebirthFallbacks={name:'Rebirth',button:'Rebirth ×2',status:'Rebirths: {count} · Klickbonus ×{multiplier}. Level {target}: {upgrades}/{total} Upgrades',ready:'Alle Upgrades haben mindestens Level {target}! Der Rebirth verdoppelt deinen Klickbonus dauerhaft.',confirm:'Rebirth durchführen? Sterne und Upgrade-Level werden zurückgesetzt; der nächste Rebirth braucht bei jedem Upgrade 25 Level mehr. Dein Klickbonus wird dauerhaft verdoppelt.',done:'Rebirth abgeschlossen! Klickbonus jetzt ×{multiplier}. Nächstes Ziel: Level {target}.'};
     function translate(key,values={}) {
       const template=StarClickerLocales[currentLanguage].ui[key]||globalThis.StarClickerAchievementLocales?.[currentLanguage]?.[key]||globalThis.StarClickerAutoclickerLocales?.[currentLanguage]?.[key]||globalThis.StarClickerRebirthLocales?.[currentLanguage]?.[key]||globalThis.StarClickerLeaderboardLocales?.[currentLanguage]?.[key]||StarClickerLocales.de.ui[key]||globalThis.StarClickerAchievementLocales?.de?.[key]||globalThis.StarClickerAutoclickerLocales?.de?.[key]||globalThis.StarClickerRebirthLocales?.de?.[key]||globalThis.StarClickerLeaderboardLocales?.de?.[key]||autoclickerFallbacks[key]||rebirthFallbacks[key]||key;
       return template.replace(/\{(\w+)\}/g,(match,name)=>values[name]??match);
@@ -717,16 +742,17 @@
       renderRebirth();
     }
     function rebirthRequirements() {
-      const upgradesAtLevel100=upgrades.filter(item=>state.owned[item.id]>=100).length;
-      return { ready:upgradesAtLevel100===upgrades.length&&state.stars>=REBIRTH_STARS_REQUIRED, upgradesAtLevel100 };
+      const targetLevel=REBIRTH_BASE_LEVEL*(state.rebirths+1);
+      const upgradesAtTargetLevel=upgrades.filter(item=>state.owned[item.id]>=targetLevel).length;
+      return { ready:upgradesAtTargetLevel===upgrades.length, upgradesAtTargetLevel, targetLevel };
     }
     function renderRebirth() {
-      const {ready,upgradesAtLevel100}=rebirthRequirements();
+      const {ready,upgradesAtTargetLevel,targetLevel}=rebirthRequirements();
       const multiplier=Math.pow(2,state.rebirths);
       const status=document.getElementById('rebirth-status');
       status.textContent=ready
-        ?translate('rebirthReady')
-        :translate('rebirthStatus',{count:format(state.rebirths),multiplier:format(multiplier),upgrades:format(upgradesAtLevel100),total:format(upgrades.length),stars:format(state.stars),target:format(REBIRTH_STARS_REQUIRED)});
+        ?translate('rebirthReady',{target:format(targetLevel)})
+        :translate('rebirthStatus',{count:format(state.rebirths),multiplier:format(multiplier),upgrades:format(upgradesAtTargetLevel),total:format(upgrades.length),target:format(targetLevel)});
       const button=document.getElementById('rebirth-button');
       button.disabled=!ready;
       button.textContent=translate('rebirthButton');
@@ -977,7 +1003,7 @@
       state.autoClickerEnabled=autoClickerEnabled;
       state.rebirths=rebirths;
       render(); saveState();
-      showToast(translate('rebirthDone',{multiplier:format(Math.pow(2,rebirths))}));
+      showToast(translate('rebirthDone',{multiplier:format(Math.pow(2,rebirths)),target:format(REBIRTH_BASE_LEVEL*(rebirths+1))}));
     });
     applyTranslations();
     updateAsteroidEvent();
