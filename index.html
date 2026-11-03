@@ -70,15 +70,15 @@
     .rebirth-button:hover:not(:disabled) { color:var(--ink); background:var(--gold); }
     .rebirth-button:disabled { border-color:#ffffff1c; color:#89919b; background:#ffffff05; cursor:not-allowed; }
     .rebirth-button:focus-visible { outline:2px solid var(--mint); outline-offset:3px; }
-    .asteroid-event { width:min(100%,440px); margin:30px auto 0; text-align:left; }
-    .asteroid-event h2 { margin:0 0 16px; font-size:16px; }
+    .christmas-event { width:min(100%,440px); margin:30px auto 0; text-align:left; }
+    .christmas-event h2 { margin:0 0 16px; font-size:16px; }
     .bossbar-row { margin-top:14px; }
     .bossbar-heading { display:flex; justify-content:space-between; align-items:baseline; gap:12px; margin-bottom:7px; color:var(--muted); font-size:12px; }
     .bossbar-time { color:var(--paper); font:13px var(--mono); font-variant-numeric:tabular-nums; }
     .bossbar-track { height:12px; overflow:hidden; border:1px solid #ffffff24; border-radius:999px; background:#101319; }
     .bossbar-fill { display:block; width:100%; height:100%; border-radius:inherit; background:linear-gradient(90deg,var(--mint),var(--gold)); transition:width 350ms linear; }
-    #asteroid-drop-row .bossbar-fill { background:linear-gradient(90deg,var(--coral),var(--gold)); }
-    .asteroid-count { margin:10px 0 0; color:var(--muted); font:11px var(--mono); text-align:right; }
+    #santa-drop-row .bossbar-fill { background:linear-gradient(90deg,#d94c5b,var(--gold)); }
+    .santa-count { margin:10px 0 0; color:var(--muted); font:11px var(--mono); text-align:right; }
     .achievement-panel { width:min(100%,440px); margin:18px auto 0; text-align:left; }
     .achievement-panel summary { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid #ffffff17; cursor:pointer; font-size:14px; font-weight:700; list-style:none; }
     .achievement-panel summary::-webkit-details-marker { display:none; }
@@ -113,12 +113,12 @@
     .achievement-claim { min-width:92px; max-width:128px; padding:8px 10px; border:1px solid #ffd05a66; border-radius:5px; color:var(--gold); background:#ffd05a0c; cursor:pointer; font-size:11px; font-weight:600; }
     .achievement-claim:disabled { border-color:#ffffff18; color:#89919b; background:transparent; cursor:default; }
     .achievement-claim:focus-visible { outline:2px solid var(--mint); outline-offset:2px; }
-    .asteroid-button { position:fixed; top:var(--fall-start,-96px); left:var(--asteroid-x,50%); z-index:6; display:grid; width:88px; height:88px; place-items:center; padding:4px; border:0; border-radius:50%; background:none; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; animation:asteroid-fall var(--fall-duration,5s) linear forwards; }
-    .asteroid-art { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 0 12px #ff806e99); }
-    .asteroid-button:hover .asteroid-art { filter:drop-shadow(0 0 20px #ffd05ae0) brightness(1.15); }
-    .asteroid-button:focus-visible { border-radius:50%; outline:3px solid var(--mint); outline-offset:3px; }
-    .asteroid-button[hidden] { display:none; }
-    @keyframes asteroid-fall { from { top:var(--fall-start,-96px); transform:translateX(-50%) rotate(-24deg); } to { top:calc(100vh + 96px); transform:translateX(-50%) rotate(336deg); } }
+    .santa-button { position:fixed; top:var(--fall-start,-96px); left:var(--santa-x,50%); z-index:6; display:grid; width:88px; height:88px; place-items:center; padding:4px; border:0; border-radius:50%; background:none; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; animation:santa-fall var(--fall-duration,5s) linear forwards; }
+    .santa-art { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 0 12px #e84c5f99); }
+    .santa-button:hover .santa-art { filter:drop-shadow(0 0 20px #ffd05ae0) brightness(1.1); }
+    .santa-button:focus-visible { border-radius:50%; outline:3px solid var(--mint); outline-offset:3px; }
+    .santa-button[hidden] { display:none; }
+    @keyframes santa-fall { from { top:var(--fall-start,-96px); transform:translateX(-50%) rotate(-24deg); } to { top:calc(100vh + 96px); transform:translateX(-50%) rotate(336deg); } }
     .shop {
       align-self:flex-start;
       width:min(100%, 420px);
@@ -208,7 +208,7 @@
       .offline-note { font-size:10px; }
     }
     @media (max-width:420px) { .connection { display:none; } .topbar-tools { gap:6px; } .language-select { max-width:90px; } .audio-control { gap:4px; } .audio-volume { width:50px; } .audio-volume-value { display:none; } .audio-toggle { width:32px; height:32px; } }
-    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } .asteroid-button { top:50vh!important; transform:translate(-50%,-50%)!important; animation:none!important; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto!important; transition-duration:.01ms!important; animation-duration:.01ms!important; } .santa-button { top:50vh!important; transform:translate(-50%,-50%)!important; animation:none!important; } }
   </style>
 </head>
 <body>
@@ -249,17 +249,17 @@
           <p class="autoclicker-status" id="autoclicker-status">Freischaltung bei 0 / 50.000 Klicks</p>
         </div>
       </div>
-      <section class="asteroid-event" aria-labelledby="asteroid-event-title">
-        <h2 id="asteroid-event-title">Asteroiden-Event</h2>
+      <section class="christmas-event" aria-labelledby="christmas-event-title">
+        <h2 id="christmas-event-title">Weihnachtsmänner-Event</h2>
         <div class="bossbar-row">
           <div class="bossbar-heading"><span id="event-phase-label">Runde endet in</span><time class="bossbar-time" id="event-phase-time">30:00</time></div>
-          <div class="bossbar-track" id="event-phase-track" role="progressbar" aria-label="Zeit der Asteroidenrunde" aria-valuemin="0" aria-valuemax="1800" aria-valuenow="1800"><span class="bossbar-fill" id="event-phase-fill"></span></div>
+          <div class="bossbar-track" id="event-phase-track" role="progressbar" aria-label="Zeit der Weihnachtsrunde" aria-valuemin="0" aria-valuemax="1800" aria-valuenow="1800"><span class="bossbar-fill" id="event-phase-fill"></span></div>
         </div>
-        <div class="bossbar-row" id="asteroid-drop-row">
-          <div class="bossbar-heading"><span>Nächster Asteroid fällt in</span><time class="bossbar-time" id="asteroid-drop-time">03:00</time></div>
-          <div class="bossbar-track" id="asteroid-drop-track" role="progressbar" aria-label="Zeit bis zum nächsten Asteroiden" aria-valuemin="0" aria-valuemax="180" aria-valuenow="180"><span class="bossbar-fill" id="asteroid-drop-fill"></span></div>
+        <div class="bossbar-row" id="santa-drop-row">
+          <div class="bossbar-heading"><span>Nächster Weihnachtsmann fällt in</span><time class="bossbar-time" id="santa-drop-time">03:00</time></div>
+          <div class="bossbar-track" id="santa-drop-track" role="progressbar" aria-label="Zeit bis zum nächsten Weihnachtsmann" aria-valuemin="0" aria-valuemax="180" aria-valuenow="180"><span class="bossbar-fill" id="santa-drop-fill"></span></div>
         </div>
-        <p class="asteroid-count" id="asteroid-count">Eingesammelt: 0 / 10</p>
+        <p class="santa-count" id="santa-count">Gefangen: 0 / 10</p>
       </section>
       <details class="achievement-panel" id="achievement-panel">
         <summary id="achievements-title">Erfolge</summary>
@@ -303,12 +303,24 @@
       </div>
     </aside>
   </main>
-  <button class="asteroid-button" id="asteroid-button" type="button" aria-label="Asteroid anklicken und 3.000.000 Sterne erhalten" title="Asteroid anklicken: +3.000.000 Sterne" hidden>
-    <svg class="asteroid-art" viewBox="0 0 100 100" aria-hidden="true">
-      <defs><radialGradient id="asteroid-rock" cx="36%" cy="30%"><stop offset="0" stop-color="#a6a29b"/><stop offset=".62" stop-color="#696b70"/><stop offset="1" stop-color="#343942"/></radialGradient></defs>
-      <path d="m49 5 18 7 19 6 8 18-5 18 4 15-14 13-19 3-14 10-17-9-18-4-5-18-7-14 8-17 4-18 19-2Z" fill="url(#asteroid-rock)" stroke="#c4c5c2" stroke-width="3" stroke-linejoin="round"/>
-      <path d="m31 28 8-4 8 5-2 8-9 3-7-5Zm31 25 10-5 8 6-2 9-11 3-7-6ZM36 67l7-4 7 4-1 7-8 3-6-4Z" fill="#3b3e43" stroke="#b7b7b2" stroke-opacity=".42" stroke-width="2"/>
-      <path d="m20 47 8-5m43-21 8 4M20 77l7 3m38 7 7-5" fill="none" stroke="#d4d1c9" stroke-opacity=".4" stroke-width="3" stroke-linecap="round"/>
+  <button class="santa-button" id="santa-button" type="button" aria-label="Weihnachtsmann anklicken und 3.000.000 Sterne erhalten" title="Weihnachtsmann anklicken: +3.000.000 Sterne" hidden>
+    <svg class="santa-art" viewBox="0 0 100 100" aria-hidden="true">
+      <ellipse cx="50" cy="94" rx="25" ry="4" fill="#101319" opacity=".55"/>
+      <path d="M23 91c2-18 8-30 20-34h14c12 4 18 16 20 34Z" fill="#d9364d" stroke="#8e2033" stroke-width="3" stroke-linejoin="round"/>
+      <path d="m31 67-9 15 7 5 12-15m28-5 9 15-7 5-12-15" fill="#d9364d" stroke="#8e2033" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 81h10v8H22zm46 0h10v8H68z" fill="#fff7e9"/>
+      <path d="M23 87h54v8H23z" fill="#f7eee3" stroke="#cbbdaf" stroke-width="2"/>
+      <path d="M39 59h22v32H39z" fill="#f7eee3"/>
+      <path d="M25 75h50v8H25z" fill="#252a31"/>
+      <rect x="46" y="73" width="9" height="12" rx="2" fill="#ffd05a" stroke="#b97b25" stroke-width="2"/>
+      <circle cx="50" cy="33" r="22" fill="#f3c29d" stroke="#b87356" stroke-width="2"/>
+      <path d="M28 31c2-16 11-24 23-24 12 0 21 8 23 24-16-6-30-6-46 0Z" fill="#d9364d" stroke="#8e2033" stroke-width="3"/>
+      <path d="M26 30c15-7 33-7 48 0v8c-16-6-32-6-48 0Z" fill="#fff7e9" stroke="#cbbdaf" stroke-width="2"/>
+      <circle cx="76" cy="12" r="8" fill="#fff7e9" stroke="#cbbdaf" stroke-width="2"/>
+      <path d="M32 39c-5 7-4 17 2 24 4 8 10 14 16 17 7-3 13-9 17-17 6-7 7-17 2-24-9 7-28 7-37 0Z" fill="#fff7e9" stroke="#cbbdaf" stroke-width="2"/>
+      <path d="M38 43c4 5 8 5 12 1 4 4 8 4 12-1" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="42" cy="34" r="2" fill="#342a27"/><circle cx="58" cy="34" r="2" fill="#342a27"/>
+      <circle cx="50" cy="44" r="4" fill="#e98272"/>
     </svg>
   </button>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -650,7 +662,7 @@
       const textById={
         'connection-status':'offline','universe-copy':'universe','wifi-copy':'wifi','main-title':'mainTitle','count-label':'countLabel','leaderboard-title':'leaderboardTitle','leaderboard-name-label':'leaderboardNicknameLabel',
         'click-hint-label':'clickHint','per-second-label':'perSecond','click-total-label':'clicks','autoclicker-title':'name','rebirth-title':'rebirthName',
-        'asteroid-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
+        'christmas-event-title':'eventTitle','shop-label':'shopLabel','secret-code-label':'secretCodes','secret-code-submit':'redeem',
         'shop-title':'shopTitle','shop-kicker':'shopKicker','local-save-note':'localSave','reset-button':'reset','language-label':'languageLabel','achievements-title':'achievementsTitle'
       };
       for (const [id,key] of Object.entries(textById)) document.getElementById(id).textContent=translate(key);
@@ -661,8 +673,8 @@
       setLeaderboardStatus(leaderboardStatusKey,leaderboardStatusValues);
       document.getElementById('star-button').setAttribute('aria-label',translate('starAria'));
       document.getElementById('stats-label').setAttribute('aria-label',translate('statsAria'));
-      document.getElementById('asteroid-button').setAttribute('aria-label',translate('asteroidAria',{reward:format(ASTEROID_REWARD)}));
-      document.getElementById('asteroid-button').title=translate('asteroidTitle',{reward:format(ASTEROID_REWARD)});
+      document.getElementById('santa-button').setAttribute('aria-label',translate('santaAria',{reward:format(ASTEROID_REWARD)}));
+      document.getElementById('santa-button').title=translate('santaTitle',{reward:format(ASTEROID_REWARD)});
       updateAudioToggle();
     }
     languageSelect.value=currentLanguage;
@@ -819,29 +831,29 @@
       document.getElementById('event-phase-label').textContent=translate(active?'roundEnds':'nextRound');
       document.getElementById('event-phase-track').setAttribute('aria-label',translate(active?'roundEnds':'nextRound'));
       updateBossbar('event-phase-track','event-phase-fill','event-phase-time',phaseRemaining,phaseDuration);
-      const dropRow=document.getElementById('asteroid-drop-row');
+      const dropRow=document.getElementById('santa-drop-row');
       const hasFutureDrop=active&&event.asteroidsSpawned<MAX_ASTEROIDS_PER_ROUND;
       dropRow.hidden=!hasFutureDrop;
-      document.getElementById('asteroid-drop-row').querySelector('.bossbar-heading span').textContent=translate('nextAsteroid');
-      document.getElementById('asteroid-drop-track').setAttribute('aria-label',translate('nextAsteroid'));
-      if (hasFutureDrop) updateBossbar('asteroid-drop-track','asteroid-drop-fill','asteroid-drop-time',Math.max(0,event.nextAsteroidAt-now),ASTEROID_DROP_MS);
-      const count=document.getElementById('asteroid-count');
+      document.getElementById('santa-drop-row').querySelector('.bossbar-heading span').textContent=translate('nextAsteroid');
+      document.getElementById('santa-drop-track').setAttribute('aria-label',translate('nextAsteroid'));
+      if (hasFutureDrop) updateBossbar('santa-drop-track','santa-drop-fill','santa-drop-time',Math.max(0,event.nextAsteroidAt-now),ASTEROID_DROP_MS);
+      const count=document.getElementById('santa-count');
       count.hidden=!active;
       count.textContent=translate('collected',{collected:format(event.asteroidsCollected),max:format(MAX_ASTEROIDS_PER_ROUND)});
-      const asteroidButton=document.getElementById('asteroid-button');
-      const showAsteroid=active&&event.asteroidAvailable;
-      asteroidButton.hidden=!showAsteroid;
-      if (showAsteroid&&asteroidButton.dataset.fallEndsAt!==String(event.asteroidFallEndsAt)) {
+      const santaButton=document.getElementById('santa-button');
+      const showSanta=active&&event.asteroidAvailable;
+      santaButton.hidden=!showSanta;
+      if (showSanta&&santaButton.dataset.fallEndsAt!==String(event.asteroidFallEndsAt)) {
         const remaining=Math.max(1,event.asteroidFallEndsAt-now);
         const progress=Math.max(0,Math.min(1,1-remaining/ASTEROID_FALL_MS));
         const viewportHeight=window.innerHeight||800;
-        asteroidButton.dataset.fallEndsAt=String(event.asteroidFallEndsAt);
-        asteroidButton.style.setProperty('--asteroid-x',`${event.asteroidX}%`);
-        asteroidButton.style.setProperty('--fall-start',`${-96+progress*(viewportHeight+192)}px`);
-        asteroidButton.style.setProperty('--fall-duration',`${remaining}ms`);
-        asteroidButton.style.animation='none';
-        void asteroidButton.offsetWidth;
-        asteroidButton.style.animation='';
+        santaButton.dataset.fallEndsAt=String(event.asteroidFallEndsAt);
+        santaButton.style.setProperty('--santa-x',`${event.asteroidX}%`);
+        santaButton.style.setProperty('--fall-start',`${-96+progress*(viewportHeight+192)}px`);
+        santaButton.style.setProperty('--fall-duration',`${remaining}ms`);
+        santaButton.style.animation='none';
+        void santaButton.offsetWidth;
+        santaButton.style.animation='';
       }
     }
     function updateAsteroidEvent(now=Date.now()) {
@@ -932,7 +944,7 @@
       state.autoClickerEnabled=!state.autoClickerEnabled;
       renderAutoclicker(); saveState();
     });
-    document.getElementById('asteroid-button').addEventListener('click',()=>{
+    document.getElementById('santa-button').addEventListener('click',()=>{
       if (updateAsteroidEvent()) { render(); saveState(); return; }
       const event=state.asteroidEvent;
       if (event.phase!=='active'||!event.asteroidAvailable) { renderAsteroidEvent(); saveState(); return; }
@@ -940,7 +952,7 @@
       event.asteroidsCollected+=1;
       state.achievementStats.asteroids+=1;
       state.stars+=ASTEROID_REWARD;
-      render(); saveState(); showToast(translate('asteroidReward',{amount:format(ASTEROID_REWARD)}));
+      render(); saveState(); showToast(translate('santaReward',{amount:format(ASTEROID_REWARD)}));
     });
     document.getElementById('upgrade-list').addEventListener('click',event=>{
       const button=event.target.closest('[data-upgrade]'); if (!button) return;
