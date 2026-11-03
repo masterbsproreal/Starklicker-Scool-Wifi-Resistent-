@@ -755,7 +755,7 @@
         :translate('rebirthStatus',{count:format(state.rebirths),multiplier:format(multiplier),upgrades:format(upgradesAtTargetLevel),total:format(upgrades.length),target:format(targetLevel)});
       const button=document.getElementById('rebirth-button');
       button.disabled=!ready;
-      button.textContent=translate('rebirthButton');
+      button.textContent=translate('rebirthButton',{multiplier:format(Math.pow(2,state.rebirths+1))});
     }
     function autoclickerSpeed(clickCount=state.achievementStats.clicks) {
       if (clickCount>=AUTOCLICKER_UNLOCK_X4) return 4;

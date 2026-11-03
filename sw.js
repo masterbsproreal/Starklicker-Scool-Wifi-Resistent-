@@ -1,4 +1,4 @@
-const CACHE_NAME = 'star-clicker-v35';
+const CACHE_NAME = 'star-clicker-v36';
 const APP_SHELL = ['./', './index.html', './manifest.json', './star.svg', './translations.js', './leaderboard-config.js'];
 
 self.addEventListener('install', event => {
